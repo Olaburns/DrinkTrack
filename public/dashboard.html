@@ -112,6 +112,11 @@
         }
       }));
 
+      // Attach markLine to first series if we have both data and events
+      if (seriesData.length > 0 && markLines.length > 0) {
+        seriesData[0].markLine = { data: markLines };
+      }
+
       return {
         backgroundColor: 'transparent',
         tooltip: {

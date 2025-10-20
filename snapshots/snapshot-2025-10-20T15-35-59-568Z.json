@@ -1,0 +1,52 @@
+{
+  "drinks": [
+    {
+      "name": "Beer",
+      "emoji": "🍺",
+      "color": "#F59E0B"
+    },
+    {
+      "name": "Wine",
+      "emoji": "🍷",
+      "color": "#DC2626"
+    },
+    {
+      "name": "Whisky",
+      "emoji": "🥃",
+      "color": "#D97706"
+    },
+    {
+      "name": "Cocktail",
+      "emoji": "🍸",
+      "color": "#EC4899"
+    },
+    {
+      "name": "Longdrink",
+      "emoji": "🍹",
+      "color": "#06B6D4"
+    },
+    {
+      "name": "Sparkling",
+      "emoji": "🥂",
+      "color": "#FBBF24"
+    },
+    {
+      "name": "Tequila",
+      "emoji": "🥃",
+      "imageUrl": "",
+      "color": "#F97316"
+    }
+  ],
+  "consumptions": [
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-20T15:35:49.959Z"
+    }
+  ],
+  "events": [
+    {
+      "label": "Testing event markers",
+      "at": "2025-10-20T15:35:50.934Z"
+    }
+  ]
+}
