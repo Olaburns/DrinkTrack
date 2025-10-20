@@ -15,7 +15,13 @@ Track consumed drinks over time during social events with live visualization, ev
 - LAN accessibility with network URL detection
 
 ## Recent Changes
-**2025-10-20**: Latest updates
+**2025-10-20**: Quality improvements
+- Fixed double-drink bug by adding 300ms debounce protection and converting from inline onclick to addEventListener
+- Updated dashboard legend styling to use chart colors for borders (visual consistency)
+- Added color selector to event creation form with 12 color options
+- Event markers now display in user-selected colors on dashboard
+
+**2025-10-20**: Core features
 - Added navigation buttons to switch between dashboard and control views
 - Implemented cumulative/normal mode toggle on dashboard with localStorage persistence
 - Fixed event marker visibility by mapping timestamps to nearest bucket timestamps
@@ -68,7 +74,7 @@ Track consumed drinks over time during social events with live visualization, ev
 { drinkName: string, at: Date }
 
 // Events
-{ label: string, at: Date }
+{ label: string, color?: string, at: Date }
 ```
 
 ### API Endpoints
@@ -96,12 +102,13 @@ Track consumed drinks over time during social events with live visualization, ev
 2. **Dual Views**: Dashboard and control panel can run simultaneously on different devices
 3. **Navigation Buttons**: Easy switching between dashboard and control panel
 4. **Cumulative Mode**: Toggle between normal (per-minute) and cumulative (running total) chart views
-5. **Event Markers**: Vertical amber lines with labels mark moments like "Beer pong started"
+5. **Event Markers**: Vertical lines with labels mark moments like "Beer pong started" - customizable colors
 6. **Automatic Snapshots**: Every 120 seconds with atomic writes
 7. **Custom Drinks**: Add new drinks with emoji/image and custom colors
 8. **Keyboard Shortcuts**: Press 1-6 to log first 6 drinks instantly
 9. **LAN URLs**: Displays both localhost and network IP on startup
 10. **Premium UI**: Dark theme with glass effects, smooth animations, responsive design
+11. **Debounce Protection**: 300ms cooldown prevents accidental double-clicks on drink buttons
 
 ## Default Drinks (Seeded)
 1. Beer 🍺
@@ -143,14 +150,16 @@ On startup, the console displays:
 ## Testing
 All core functionality tested and verified:
 - ✅ SSE real-time updates (< 1s latency)
-- ✅ Drink consumption recording
-- ✅ Event marker creation and display
-- ✅ Add custom drinks
+- ✅ Drink consumption recording with debounce protection
+- ✅ Event marker creation with customizable colors
+- ✅ Add custom drinks with color selection
 - ✅ Snapshot creation and restoration
 - ✅ LAN URL detection and display
 - ✅ Keyboard shortcuts
 - ✅ Toast notifications
 - ✅ 60-minute rolling window aggregation
+- ✅ Dashboard legend with chart-colored borders
+- ✅ Cumulative/normal mode toggle
 
 ## Next Steps (Future Enhancements)
 - Export consumption history (CSV/JSON)
