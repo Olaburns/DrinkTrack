@@ -240,11 +240,18 @@
       const legendContainer = document.getElementById('legend');
       legendContainer.innerHTML = '';
 
-      drinks.forEach(drink => {
+      drinks.forEach((drink, index) => {
         const totalCount = chartData.series[drink.name]?.reduce((sum, val) => sum + val, 0) || 0;
+        
+        // Get the color for this drink (same as chart)
+        const drinkColor = drink.color || colorPalette[index % colorPalette.length];
         
         const item = document.createElement('div');
         item.className = 'legend-item';
+        // Add colored border matching the chart series
+        item.style.borderColor = drinkColor;
+        item.style.borderWidth = '2px';
+        item.style.borderStyle = 'solid';
         
         let iconHtml;
         if (drink.imageUrl) {
@@ -252,7 +259,7 @@
         } else if (drink.emoji) {
           iconHtml = `<span class="legend-emoji">${drink.emoji}</span>`;
         } else {
-          iconHtml = `<div class="legend-color" style="background: ${drink.color}"></div>`;
+          iconHtml = `<div class="legend-color" style="background: ${drinkColor}"></div>`;
         }
         
         item.innerHTML = `
