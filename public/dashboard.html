@@ -91,7 +91,7 @@
       localStorage.setItem('chartMode', chartMode);
       document.getElementById('modeLabel').textContent = 
         chartMode === 'normal' ? 'Switch to Cumulative' : 'Switch to Normal';
-      updateChart();
+      chart.setOption(getChartOption(), true);
     }
 
     // Chart options
