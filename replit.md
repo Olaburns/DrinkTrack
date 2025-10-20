@@ -15,12 +15,17 @@ Track consumed drinks over time during social events with live visualization, ev
 - LAN accessibility with network URL detection
 
 ## Recent Changes
+**2025-10-20**: Latest updates
+- Added navigation buttons to switch between dashboard and control views
+- Implemented cumulative/normal mode toggle on dashboard with localStorage persistence
+- Fixed event marker visibility by mapping timestamps to nearest bucket timestamps
+- All features tested and working correctly
+
 **2025-10-20**: Initial implementation
 - Created vanilla JavaScript + Express server (no React/bundler per user requirements)
 - Implemented SSE real-time updates with heartbeat
 - Built premium dark theme dashboard and control panel
 - Added snapshot system with atomic writes and retention policy
-- Fixed event marker rendering to display on live charts
 
 ## Project Architecture
 
@@ -89,12 +94,14 @@ Track consumed drinks over time during social events with live visualization, ev
 ## Key Features
 1. **Real-time Updates**: SSE broadcasts consumption/event changes to all connected clients
 2. **Dual Views**: Dashboard and control panel can run simultaneously on different devices
-3. **Automatic Snapshots**: Every 120 seconds with atomic writes
-4. **Event Markers**: Track moments like "Beer pong started" on the timeline
-5. **Custom Drinks**: Add new drinks with emoji/image and custom colors
-6. **Keyboard Shortcuts**: Press 1-6 to log first 6 drinks instantly
-7. **LAN URLs**: Displays both localhost and network IP on startup
-8. **Premium UI**: Dark theme with glass effects, smooth animations, responsive design
+3. **Navigation Buttons**: Easy switching between dashboard and control panel
+4. **Cumulative Mode**: Toggle between normal (per-minute) and cumulative (running total) chart views
+5. **Event Markers**: Vertical amber lines with labels mark moments like "Beer pong started"
+6. **Automatic Snapshots**: Every 120 seconds with atomic writes
+7. **Custom Drinks**: Add new drinks with emoji/image and custom colors
+8. **Keyboard Shortcuts**: Press 1-6 to log first 6 drinks instantly
+9. **LAN URLs**: Displays both localhost and network IP on startup
+10. **Premium UI**: Dark theme with glass effects, smooth animations, responsive design
 
 ## Default Drinks (Seeded)
 1. Beer 🍺
