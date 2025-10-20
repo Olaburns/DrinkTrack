@@ -17,10 +17,16 @@
         <span>🍺</span>
         <span>Track Drinks</span>
       </h1>
-      <button class="btn btn-outline" onclick="showEventModal()">
-        <span>+</span>
-        <span>Add Event</span>
-      </button>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <a href="/dashboard" class="btn btn-outline" data-testid="button-nav-dashboard">
+          <span>📊</span>
+          <span>Dashboard</span>
+        </a>
+        <button class="btn btn-outline" onclick="showEventModal()" data-testid="button-add-event">
+          <span>+</span>
+          <span>Add Event</span>
+        </button>
+      </div>
     </header>
 
     <!-- Main Content -->
