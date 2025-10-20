@@ -120,6 +120,7 @@
     let drinks = [];
     let selectedColor = '#8B5CF6';
     let totalDrinksCount = 0;
+    let consumeInProgress = false;
 
     const colorOptions = [
       '#F59E0B', '#DC2626', '#D97706', '#EC4899', 
@@ -173,17 +174,31 @@
         return `
           <button class="drink-btn" 
                   style="--drink-color: ${drink.color || '#8B5CF6'}"
-                  onclick="consumeDrink('${drink.name}', '${drink.emoji || '🥃'}')">
+                  data-drink-name="${drink.name}"
+                  data-drink-emoji="${drink.emoji || '🥃'}">
             ${iconHtml}
             <div class="drink-name">${drink.name}</div>
             ${shortcut}
           </button>
         `;
       }).join('');
+      
+      // Add click event listeners (avoid inline onclick to prevent double-binding)
+      document.querySelectorAll('.drink-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const drinkName = this.dataset.drinkName;
+          const emoji = this.dataset.drinkEmoji;
+          consumeDrink(drinkName, emoji);
+        });
+      });
     }
 
     // Consume drink
     async function consumeDrink(drinkName, emoji) {
+      // Prevent double-clicks and rapid successive calls
+      if (consumeInProgress) return;
+      consumeInProgress = true;
+      
       try {
         const response = await fetch('/consume', {
           method: 'POST',
@@ -202,6 +217,11 @@
       } catch (err) {
         console.error('Failed to consume drink:', err);
         showToast('❌', 'Connection error');
+      } finally {
+        // Reset after a short delay to prevent rapid double-clicks
+        setTimeout(() => {
+          consumeInProgress = false;
+        }, 300);
       }
     }
 
