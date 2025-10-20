@@ -308,7 +308,7 @@ app.post('/consume', (req, res) => {
 
 // Record event
 app.post('/event', (req, res) => {
-  const { label } = req.body;
+  const { label, color } = req.body;
   
   if (!label || label.trim() === '') {
     return res.status(400).json({ error: 'Event label is required' });
@@ -316,6 +316,7 @@ app.post('/event', (req, res) => {
   
   const event = {
     label: label.trim(),
+    color: color || '#F59E0B', // Default amber color
     at: new Date().toISOString()
   };
   
@@ -323,6 +324,10 @@ app.post('/event', (req, res) => {
   
   // Broadcast to all SSE clients
   broadcastSSE('event', event);
+  
+  // Also send updated stats
+  const stats = getAggregatedStats();
+  broadcastSSE('stats', stats);
   
   res.status(201).json(event);
 });

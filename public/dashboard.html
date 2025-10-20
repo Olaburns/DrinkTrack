@@ -133,23 +133,26 @@
       });
 
       // Event markers
-      const markLines = chartData.events.map(event => ({
-        xAxis: event.at,
-        label: {
-          formatter: event.label,
-          position: 'insideEndTop',
-          rotate: 90,
-          color: 'hsl(38, 92%, 50%)',
-          fontSize: 11,
-          fontWeight: 'bold'
-        },
-        lineStyle: {
-          color: 'hsl(38, 92%, 50%)',
-          width: 2,
-          type: 'solid',
-          opacity: 0.7
-        }
-      }));
+      const markLines = chartData.events.map(event => {
+        const eventColor = event.color || '#F59E0B'; // Default amber
+        return {
+          xAxis: event.at,
+          label: {
+            formatter: event.label,
+            position: 'insideEndTop',
+            rotate: 90,
+            color: eventColor,
+            fontSize: 11,
+            fontWeight: 'bold'
+          },
+          lineStyle: {
+            color: eventColor,
+            width: 2,
+            type: 'solid',
+            opacity: 0.7
+          }
+        };
+      });
 
       // Attach markLine to first series if we have both data and events
       if (seriesData.length > 0 && markLines.length > 0) {
@@ -314,6 +317,7 @@
         
         return {
           label: event.label,
+          color: event.color || '#F59E0B', // Preserve color
           at: nearestTimestamp
         };
       });

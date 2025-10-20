@@ -100,9 +100,16 @@
       </div>
       
       <form id="eventForm" onsubmit="handleAddEvent(event)">
-        <div class="form-group mb-0">
+        <div class="form-group">
           <label class="form-label" for="eventLabel">Event Label *</label>
           <input type="text" id="eventLabel" class="form-input" placeholder="e.g., Beer pong started" required>
+        </div>
+        
+        <div class="form-group mb-0">
+          <label class="form-label">Event Color</label>
+          <div class="color-picker-grid" id="eventColorPicker">
+            <!-- Color options will be inserted here -->
+          </div>
         </div>
         
         <div class="modal-footer">
@@ -119,6 +126,7 @@
   <script>
     let drinks = [];
     let selectedColor = '#8B5CF6';
+    let selectedEventColor = '#F59E0B'; // Default amber for events
     let totalDrinksCount = 0;
     let consumeInProgress = false;
 
@@ -128,7 +136,7 @@
       '#3B82F6', '#F97316', '#14B8A6', '#A855F7'
     ];
 
-    // Render color picker
+    // Render color picker for drinks
     function renderColorPicker() {
       const picker = document.getElementById('colorPicker');
       picker.innerHTML = colorOptions.map(color => `
@@ -142,6 +150,22 @@
     function selectColor(color) {
       selectedColor = color;
       renderColorPicker();
+    }
+
+    // Render color picker for events
+    function renderEventColorPicker() {
+      const picker = document.getElementById('eventColorPicker');
+      picker.innerHTML = colorOptions.map(color => `
+        <div class="color-option ${color === selectedEventColor ? 'selected' : ''}" 
+             style="background: ${color}"
+             onclick="selectEventColor('${color}')">
+        </div>
+      `).join('');
+    }
+
+    function selectEventColor(color) {
+      selectedEventColor = color;
+      renderEventColorPicker();
     }
 
     // Fetch drinks
@@ -299,12 +323,14 @@
     // Event modal
     function showEventModal() {
       document.getElementById('eventModal').classList.remove('hidden');
+      renderEventColorPicker();
     }
 
     function closeEventModal(event) {
       if (!event || event.target.classList.contains('modal-overlay')) {
         document.getElementById('eventModal').classList.add('hidden');
         document.getElementById('eventForm').reset();
+        selectedEventColor = '#F59E0B'; // Reset to default amber
       }
     }
 
@@ -317,7 +343,10 @@
         const response = await fetch('/event', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ label })
+          body: JSON.stringify({ 
+            label,
+            color: selectedEventColor
+          })
         });
 
         if (response.ok) {
