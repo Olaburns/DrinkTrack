@@ -1,0 +1,67 @@
+Context & Rationale (Why):
+We need a zero-friction, LAN-reachable MVP to track consumed drinks over time during bar nights. Multiple people open a URL on the same network, hit large buttons to record a drink, and a live time-series dashboard shows the counts. The app must feel premium yet remain minimal, with no database and in-memory state plus simple crash protection via snapshots.
+Tech Constraints (keep it light):
+Node 20 + Express in one small server.js.
+SSE (Server-Sent Events) for realtime push (GET /events).
+Static frontend (public/), vanilla JS only; libraries via CDN (no bundler).
+Charting: choose a high-quality CDN chart lib that looks premium out-of-the-box (prefer ECharts; Chart.js is acceptable).
+Functional Requirements (what it must do):
+Live Dashboard (/dashboard)
+X-axis = time, Y-axis = count of consumed drinks; updates live without page reload.
+Show per-drink series (stacked area/lines or bars — pick the simpler).
+Legend with emoji/icon per drink; fallback to text if no emoji; if imageUrl exists, show a round avatar.
+Event markers: vertical line with label + tooltip (e.g., “Beer pong started”).
+Minimal controls: LIVE indicator; fixed window Last 60 minutes is enough.
+Control Panel (/control)
+Touch-friendly large buttons to record a drink (+1 at current timestamp) with a brief toast (“🍺 Beer +1”).
+Seeded buttons on first start: Beer 🍺, Wine 🍷, Whisky 🥃, Cocktail 🍸, Longdrink 🍹, Sparkling 🥂.
+Add new drink: name + optional emoji or image URL; optional color for chart series.
+Add event: free text → appears as a vertical marker in the dashboard.
+Optional: keyboard shortcuts 1–6 for the seeded drinks.
+APIs & Realtime Semantics
+GET / → redirect to /dashboard
+GET /dashboard → serve dashboard page
+GET /control → serve control page
+GET /events → SSE stream sending event types:
+stats → aggregated time series for the last 60 minutes (minute buckets).
+consumption → single new data point on button press.
+event → a new event/marker.
+heartbeat every ~15s.
+GET /drinks → list drinks (name, emoji?, imageUrl?, color?)
+POST /drinks → create a drink
+POST /consume { drinkName } → record one consumption and broadcast via SSE
+POST /event { label } → record an event and broadcast via SSE
+Data (In-Memory Only)
+drinks: Drink[] (seed the 6 defaults above).
+consumptions: { drinkName: string, at: Date }[].
+events: { label: string, at: Date }[].
+Server performs simple minute-bucket aggregation for a rolling 60-minute window.
+Crash Protection (Snapshots):
+Automatic JSON snapshots to disk every SNAPSHOT_INTERVAL_SEC (default 120s).
+Atomic write (write temp → rename).
+Directory: SNAPSHOT_DIR (default ./snapshots); create if missing.
+Retention: keep last SNAPSHOT_MAX_FILES (default 30), delete older ones.
+On startup: restore from the latest valid snapshot if present; log a clear message. If restore fails, continue with empty state and warn.
+Manual endpoints:
+POST /api/snapshot → force a snapshot now (return filename).
+GET /api/snapshot/latest → download latest snapshot.
+(Optional) POST /api/snapshot/restore → restore latest snapshot.
+Startup & LAN Behavior:
+Bind to 0.0.0.0 on PORT=3000.
+On start, print both URLs:
+Local: http://localhost:3000/dashboard and /control
+Network: http://<LAN-IPv4>:3000/dashboard and /control (detect first non-internal IPv4).
+Visual/UX Quality (premium but simple):
+Dark theme, subtle glass effect, thin grid lines, smooth curves, small animations; no point markers in live view.
+Big, readable buttons; tiny toast feedback on tap.
+Non-Functional Constraints:
+No database, no auth, minimal dependencies (Express + chosen chart lib via CDN).
+Live update visible < 1 s after a button press on /control.
+Works on current Chrome/Edge/Safari; graceful degradation if snapshots fail (keep running in memory).
+Acceptance Criteria (testable):
+Given /control is open, when a seeded drink button is pressed, then /dashboard shows the increment within < 1 s.
+Given an event text is submitted, then a vertical labeled marker appears at the correct time on /dashboard.
+On fresh start with no snapshots, seeded drinks are available.
+After running for a few minutes, a snapshot file exists in the snapshot directory.
+If the server process is terminated and restarted, then the app restores the latest snapshot automatically (drinks, recent counts, events).
+On startup, the console prints both Localhost and LAN URLs as specified.
