@@ -1,0 +1,102 @@
+{
+  "drinks": [
+    {
+      "name": "Beer",
+      "emoji": "🍺",
+      "color": "#F59E0B"
+    },
+    {
+      "name": "Wine",
+      "emoji": "🍷",
+      "color": "#DC2626"
+    },
+    {
+      "name": "Whisky",
+      "emoji": "🥃",
+      "color": "#D97706"
+    },
+    {
+      "name": "Cocktail",
+      "emoji": "🍸",
+      "color": "#EC4899"
+    },
+    {
+      "name": "Longdrink",
+      "emoji": "🍹",
+      "color": "#06B6D4"
+    },
+    {
+      "name": "Sparkling",
+      "emoji": "🥂",
+      "color": "#FBBF24"
+    },
+    {
+      "name": "Tequila",
+      "emoji": "🥃",
+      "imageUrl": "",
+      "color": "#F97316"
+    },
+    {
+      "name": "Mojito",
+      "emoji": "🍹",
+      "imageUrl": "",
+      "color": "#F59E0B"
+    }
+  ],
+  "consumptions": [
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-20T15:35:49.959Z"
+    },
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-20T15:36:11.760Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-20T15:36:12.317Z"
+    },
+    {
+      "drinkName": "Cocktail",
+      "at": "2025-10-20T15:36:12.866Z"
+    },
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-20T15:36:13.412Z"
+    },
+    {
+      "drinkName": "Whisky",
+      "at": "2025-10-20T15:36:13.960Z"
+    },
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-20T15:41:09.483Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-20T15:41:57.946Z"
+    },
+    {
+      "drinkName": "Cocktail",
+      "at": "2025-10-20T15:41:58.864Z"
+    },
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-20T15:44:36.332Z"
+    }
+  ],
+  "events": [
+    {
+      "label": "Testing event markers",
+      "at": "2025-10-20T15:35:50.934Z"
+    },
+    {
+      "label": "Party started!",
+      "at": "2025-10-20T15:42:41.150Z"
+    },
+    {
+      "label": "Beerpong",
+      "at": "2025-10-20T15:43:28.495Z"
+    }
+  ]
+}
