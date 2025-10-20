@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drink Tracker - Live Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">
+        <span>📊</span>
+        <span>Drink Tracker Dashboard</span>
+      </h1>
+      <div class="live-indicator">
+        <div class="live-dot"></div>
+        <span class="live-text">Live</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Chart Container -->
+      <div class="chart-container">
+        <div id="chart"></div>
+      </div>
+
+      <!-- Legend -->
+      <div class="legend" id="legend">
+        <!-- Dynamic legend items will be inserted here -->
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Initialize ECharts
+    const chartDom = document.getElementById('chart');
+    const chart = echarts.init(chartDom, null, {
+      renderer: 'canvas',
+      useDirtyRect: false
+    });
+
+    // Chart state
+    let chartData = {
+      times: [],
+      series: {},
+      events: []
+    };
+
+    let drinks = [];
+
+    // Color palette
+    const colorPalette = [
+      'hsl(262, 83%, 58%)',
+      'hsl(198, 93%, 60%)',
+      'hsl(340, 82%, 52%)',
+      'hsl(48, 96%, 53%)',
+      'hsl(280, 67%, 47%)',
+      'hsl(171, 77%, 47%)'
+    ];
+
+    // Chart options
+    function getChartOption() {
+      const seriesData = Object.keys(chartData.series).map((drinkName, index) => {
+        const drink = drinks.find(d => d.name === drinkName);
+        const color = drink?.color || colorPalette[index % colorPalette.length];
+        
+        return {
+          name: drinkName,
+          type: 'line',
+          stack: 'total',
+          areaStyle: {
+            opacity: 0.3
+          },
+          smooth: true,
+          symbol: 'none',
+          lineStyle: {
+            width: 2
+          },
+          emphasis: {
+            focus: 'series'
+          },
+          data: chartData.series[drinkName],
+          itemStyle: {
+            color: color
+          }
+        };
+      });
+
+      // Event markers
+      const markLines = chartData.events.map(event => ({
+        xAxis: event.at,
+        label: {
+          formatter: event.label,
+          position: 'insideEndTop',
+          rotate: 90,
+          color: 'hsl(38, 92%, 50%)',
+          fontSize: 11,
+          fontWeight: 'bold'
+        },
+        lineStyle: {
+          color: 'hsl(38, 92%, 50%)',
+          width: 2,
+          type: 'solid',
+          opacity: 0.7
+        }
+      }));
+
+      return {
+        backgroundColor: 'transparent',
+        tooltip: {
+          trigger: 'axis',
+          backgroundColor: 'hsl(220, 10%, 18%)',
+          borderColor: 'hsl(220, 10%, 24%)',
+          textStyle: {
+            color: 'hsl(220, 10%, 95%)'
+          },
+          axisPointer: {
+            type: 'cross',
+            crossStyle: {
+              color: 'hsl(220, 8%, 65%)'
+            }
+          }
+        },
+        legend: {
+          show: false
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          top: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          boundaryGap: false,
+          data: chartData.times,
+          axisLine: {
+            lineStyle: {
+              color: 'hsl(220, 10%, 20%)'
+            }
+          },
+          axisLabel: {
+            color: 'hsl(220, 8%, 65%)',
+            formatter: function(value) {
+              const date = new Date(value);
+              return date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false
+              });
+            }
+          },
+          splitLine: {
+            lineStyle: {
+              color: 'hsl(220, 10%, 20%)',
+              opacity: 0.2
+            }
+          }
+        },
+        yAxis: {
+          type: 'value',
+          axisLine: {
+            lineStyle: {
+              color: 'hsl(220, 10%, 20%)'
+            }
+          },
+          axisLabel: {
+            color: 'hsl(220, 8%, 65%)'
+          },
+          splitLine: {
+            lineStyle: {
+              color: 'hsl(220, 10%, 20%)',
+              opacity: 0.2
+            }
+          }
+        },
+        series: seriesData.length > 0 ? seriesData : [{
+          name: 'No Data',
+          type: 'line',
+          data: [],
+          markLine: markLines.length > 0 ? { data: markLines } : undefined
+        }]
+      };
+    }
+
+    // Update legend
+    function updateLegend() {
+      const legendContainer = document.getElementById('legend');
+      legendContainer.innerHTML = '';
+
+      drinks.forEach(drink => {
+        const totalCount = chartData.series[drink.name]?.reduce((sum, val) => sum + val, 0) || 0;
+        
+        const item = document.createElement('div');
+        item.className = 'legend-item';
+        
+        let iconHtml;
+        if (drink.imageUrl) {
+          iconHtml = `<img src="${drink.imageUrl}" alt="${drink.name}" class="legend-avatar">`;
+        } else if (drink.emoji) {
+          iconHtml = `<span class="legend-emoji">${drink.emoji}</span>`;
+        } else {
+          iconHtml = `<div class="legend-color" style="background: ${drink.color}"></div>`;
+        }
+        
+        item.innerHTML = `
+          ${iconHtml}
+          <span class="legend-name">${drink.name}</span>
+          <span class="legend-count">${totalCount}</span>
+        `;
+        
+        legendContainer.appendChild(item);
+      });
+    }
+
+    // Process stats data
+    function processStats(stats) {
+      const times = [];
+      const seriesMap = {};
+
+      // Initialize series for all drinks
+      drinks.forEach(drink => {
+        seriesMap[drink.name] = [];
+      });
+
+      // Process buckets
+      stats.buckets.forEach(bucket => {
+        times.push(bucket.timestamp);
+        
+        // Add data for each drink
+        drinks.forEach(drink => {
+          const count = bucket.drinks[drink.name] || 0;
+          seriesMap[drink.name].push(count);
+        });
+      });
+
+      chartData.times = times;
+      chartData.series = seriesMap;
+      chartData.events = stats.recentEvents || [];
+
+      // Update chart
+      chart.setOption(getChartOption(), true);
+      updateLegend();
+    }
+
+    // Fetch drinks
+    async function fetchDrinks() {
+      try {
+        const response = await fetch('/drinks');
+        drinks = await response.json();
+        updateLegend();
+      } catch (err) {
+        console.error('Failed to fetch drinks:', err);
+      }
+    }
+
+    // Setup SSE
+    function setupSSE() {
+      const eventSource = new EventSource('/events');
+
+      eventSource.addEventListener('stats', (event) => {
+        const stats = JSON.parse(event.data);
+        processStats(stats);
+      });
+
+      eventSource.addEventListener('consumption', (event) => {
+        // Stats update will follow
+      });
+
+      eventSource.addEventListener('event', (event) => {
+        // Stats update will follow
+      });
+
+      eventSource.addEventListener('drink-added', (event) => {
+        fetchDrinks();
+      });
+
+      eventSource.addEventListener('heartbeat', (event) => {
+        // Connection alive
+      });
+
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error);
+      };
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      chart.resize();
+    });
+
+    // Initialize
+    async function init() {
+      await fetchDrinks();
+      setupSSE();
+      
+      // Show initial empty state
+      chart.setOption(getChartOption());
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drink Tracker - Control Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">
+        <span>🍺</span>
+        <span>Track Drinks</span>
+      </h1>
+      <button class="btn btn-outline" onclick="showEventModal()">
+        <span>+</span>
+        <span>Add Event</span>
+      </button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Stats Banner -->
+      <div class="stats-banner">
+        <div class="stat-item">
+          <div class="stat-value" id="totalDrinks">0</div>
+          <div class="stat-label">Total Drinks</div>
+        </div>
+      </div>
+
+      <!-- Drink Grid -->
+      <div class="drink-grid" id="drinkGrid">
+        <!-- Dynamic drink buttons will be inserted here -->
+      </div>
+
+      <!-- Action Row -->
+      <div class="action-row">
+        <button class="btn btn-primary" onclick="showAddDrinkModal()">
+          <span>+</span>
+          <span>Add New Drink</span>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Add Drink Modal -->
+  <div id="addDrinkModal" class="modal-overlay hidden" onclick="closeAddDrinkModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Add New Drink</h2>
+      </div>
+      
+      <form id="addDrinkForm" onsubmit="handleAddDrink(event)">
+        <div class="form-group">
+          <label class="form-label" for="drinkName">Name *</label>
+          <input type="text" id="drinkName" class="form-input" placeholder="e.g., Mojito" required>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="drinkEmoji">Emoji (optional)</label>
+          <input type="text" id="drinkEmoji" class="form-input" placeholder="e.g., 🍹" maxlength="4">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label" for="drinkImageUrl">Image URL (optional)</label>
+          <input type="url" id="drinkImageUrl" class="form-input" placeholder="https://...">
+        </div>
+        
+        <div class="form-group mb-0">
+          <label class="form-label">Color</label>
+          <div class="color-picker-grid" id="colorPicker">
+            <!-- Color options will be inserted here -->
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeAddDrinkModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Drink</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Add Event Modal -->
+  <div id="eventModal" class="modal-overlay hidden" onclick="closeEventModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Add Event Marker</h2>
+      </div>
+      
+      <form id="eventForm" onsubmit="handleAddEvent(event)">
+        <div class="form-group mb-0">
+          <label class="form-label" for="eventLabel">Event Label *</label>
+          <input type="text" id="eventLabel" class="form-input" placeholder="e.g., Beer pong started" required>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeEventModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add Event</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+
+  <script>
+    let drinks = [];
+    let selectedColor = '#8B5CF6';
+    let totalDrinksCount = 0;
+
+    const colorOptions = [
+      '#F59E0B', '#DC2626', '#D97706', '#EC4899', 
+      '#06B6D4', '#FBBF24', '#8B5CF6', '#10B981',
+      '#3B82F6', '#F97316', '#14B8A6', '#A855F7'
+    ];
+
+    // Render color picker
+    function renderColorPicker() {
+      const picker = document.getElementById('colorPicker');
+      picker.innerHTML = colorOptions.map(color => `
+        <div class="color-option ${color === selectedColor ? 'selected' : ''}" 
+             style="background: ${color}"
+             onclick="selectColor('${color}')">
+        </div>
+      `).join('');
+    }
+
+    function selectColor(color) {
+      selectedColor = color;
+      renderColorPicker();
+    }
+
+    // Fetch drinks
+    async function fetchDrinks() {
+      try {
+        const response = await fetch('/drinks');
+        drinks = await response.json();
+        renderDrinks();
+      } catch (err) {
+        console.error('Failed to fetch drinks:', err);
+        showToast('❌', 'Failed to load drinks');
+      }
+    }
+
+    // Render drink buttons
+    function renderDrinks() {
+      const grid = document.getElementById('drinkGrid');
+      grid.innerHTML = drinks.map((drink, index) => {
+        let iconHtml;
+        if (drink.imageUrl) {
+          iconHtml = `<img src="${drink.imageUrl}" alt="${drink.name}" class="drink-avatar">`;
+        } else if (drink.emoji) {
+          iconHtml = `<div class="drink-emoji">${drink.emoji}</div>`;
+        } else {
+          iconHtml = `<div class="drink-emoji">🥃</div>`;
+        }
+        
+        const shortcut = index < 6 ? `<div class="drink-shortcut">${index + 1}</div>` : '';
+        
+        return `
+          <button class="drink-btn" 
+                  style="--drink-color: ${drink.color || '#8B5CF6'}"
+                  onclick="consumeDrink('${drink.name}', '${drink.emoji || '🥃'}')">
+            ${iconHtml}
+            <div class="drink-name">${drink.name}</div>
+            ${shortcut}
+          </button>
+        `;
+      }).join('');
+    }
+
+    // Consume drink
+    async function consumeDrink(drinkName, emoji) {
+      try {
+        const response = await fetch('/consume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ drinkName })
+        });
+
+        if (response.ok) {
+          showToast(emoji, `${drinkName} +1`);
+          totalDrinksCount++;
+          updateStats();
+        } else {
+          const error = await response.json();
+          showToast('❌', error.error || 'Failed to record');
+        }
+      } catch (err) {
+        console.error('Failed to consume drink:', err);
+        showToast('❌', 'Connection error');
+      }
+    }
+
+    // Update stats
+    function updateStats() {
+      document.getElementById('totalDrinks').textContent = totalDrinksCount;
+    }
+
+    // Show toast
+    function showToast(emoji, message) {
+      const container = document.getElementById('toastContainer');
+      
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `
+        <div class="toast-emoji">${emoji}</div>
+        <div class="toast-message">${message}</div>
+      `;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 2000);
+    }
+
+    // Add drink modal
+    function showAddDrinkModal() {
+      document.getElementById('addDrinkModal').classList.remove('hidden');
+      renderColorPicker();
+    }
+
+    function closeAddDrinkModal(event) {
+      if (!event || event.target.classList.contains('modal-overlay')) {
+        document.getElementById('addDrinkModal').classList.add('hidden');
+        document.getElementById('addDrinkForm').reset();
+        selectedColor = '#8B5CF6';
+      }
+    }
+
+    async function handleAddDrink(event) {
+      event.preventDefault();
+      
+      const name = document.getElementById('drinkName').value;
+      const emoji = document.getElementById('drinkEmoji').value;
+      const imageUrl = document.getElementById('drinkImageUrl').value;
+      
+      try {
+        const response = await fetch('/drinks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            name, 
+            emoji, 
+            imageUrl, 
+            color: selectedColor 
+          })
+        });
+
+        if (response.ok) {
+          const drink = await response.json();
+          showToast(drink.emoji || '✅', `${drink.name} added!`);
+          closeAddDrinkModal();
+          await fetchDrinks();
+        } else {
+          const error = await response.json();
+          showToast('❌', error.error || 'Failed to add drink');
+        }
+      } catch (err) {
+        console.error('Failed to add drink:', err);
+        showToast('❌', 'Connection error');
+      }
+    }
+
+    // Event modal
+    function showEventModal() {
+      document.getElementById('eventModal').classList.remove('hidden');
+    }
+
+    function closeEventModal(event) {
+      if (!event || event.target.classList.contains('modal-overlay')) {
+        document.getElementById('eventModal').classList.add('hidden');
+        document.getElementById('eventForm').reset();
+      }
+    }
+
+    async function handleAddEvent(event) {
+      event.preventDefault();
+      
+      const label = document.getElementById('eventLabel').value;
+      
+      try {
+        const response = await fetch('/event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ label })
+        });
+
+        if (response.ok) {
+          showToast('📍', `Event: ${label}`);
+          closeEventModal();
+        } else {
+          const error = await response.json();
+          showToast('❌', error.error || 'Failed to add event');
+        }
+      } catch (err) {
+        console.error('Failed to add event:', err);
+        showToast('❌', 'Connection error');
+      }
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (event) => {
+      const key = event.key;
+      if (key >= '1' && key <= '6') {
+        const index = parseInt(key) - 1;
+        if (drinks[index]) {
+          consumeDrink(drinks[index].name, drinks[index].emoji || '🥃');
+        }
+      }
+    });
+
+    // Setup SSE for stats updates
+    function setupSSE() {
+      const eventSource = new EventSource('/events');
+
+      eventSource.addEventListener('stats', (event) => {
+        const stats = JSON.parse(event.data);
+        // Calculate total from buckets
+        let total = 0;
+        stats.buckets.forEach(bucket => {
+          Object.values(bucket.drinks).forEach(count => {
+            total += count;
+          });
+        });
+        totalDrinksCount = total;
+        updateStats();
+      });
+
+      eventSource.addEventListener('drink-added', (event) => {
+        fetchDrinks();
+      });
+
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error);
+      };
+    }
+
+    // Initialize
+    async function init() {
+      await fetchDrinks();
+      setupSSE();
+    }
+
+    init();
+  </script>
+</body>
+</html>
