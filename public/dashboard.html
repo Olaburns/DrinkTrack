@@ -32,6 +32,13 @@
 
     <!-- Main Content -->
     <main class="main-content">
+      <!-- Chart Controls -->
+      <div style="display: flex; justify-content: flex-end; padding: 0 1rem 0.5rem; gap: 0.5rem;">
+        <button id="toggleMode" class="btn btn-outline" onclick="toggleChartMode()" data-testid="button-toggle-mode">
+          <span id="modeLabel">Switch to Cumulative</span>
+        </button>
+      </div>
+      
       <!-- Chart Container -->
       <div class="chart-container">
         <div id="chart"></div>
@@ -60,6 +67,13 @@
     };
 
     let drinks = [];
+    
+    // Chart mode: 'normal' or 'cumulative'
+    let chartMode = localStorage.getItem('chartMode') || 'normal';
+    
+    // Update button label on load
+    document.getElementById('modeLabel').textContent = 
+      chartMode === 'normal' ? 'Switch to Cumulative' : 'Switch to Normal';
 
     // Color palette
     const colorPalette = [
@@ -70,6 +84,15 @@
       'hsl(280, 67%, 47%)',
       'hsl(171, 77%, 47%)'
     ];
+    
+    // Toggle chart mode
+    function toggleChartMode() {
+      chartMode = chartMode === 'normal' ? 'cumulative' : 'normal';
+      localStorage.setItem('chartMode', chartMode);
+      document.getElementById('modeLabel').textContent = 
+        chartMode === 'normal' ? 'Switch to Cumulative' : 'Switch to Normal';
+      updateChart();
+    }
 
     // Chart options
     function getChartOption() {
@@ -77,13 +100,23 @@
         const drink = drinks.find(d => d.name === drinkName);
         const color = drink?.color || colorPalette[index % colorPalette.length];
         
+        // Calculate cumulative data if in cumulative mode
+        let data = chartData.series[drinkName];
+        if (chartMode === 'cumulative') {
+          let cumSum = 0;
+          data = data.map(val => {
+            cumSum += val;
+            return cumSum;
+          });
+        }
+        
         return {
           name: drinkName,
           type: 'line',
-          stack: 'total',
-          areaStyle: {
+          stack: chartMode === 'normal' ? 'total' : null,
+          areaStyle: chartMode === 'normal' ? {
             opacity: 0.3
-          },
+          } : null,
           smooth: true,
           symbol: 'none',
           lineStyle: {
@@ -92,7 +125,7 @@
           emphasis: {
             focus: 'series'
           },
-          data: chartData.series[drinkName],
+          data: data,
           itemStyle: {
             color: color
           }
@@ -255,7 +288,28 @@
 
       chartData.times = times;
       chartData.series = seriesMap;
-      chartData.events = stats.recentEvents || [];
+      
+      // Map events to nearest bucket timestamps for markLine compatibility
+      chartData.events = (stats.recentEvents || []).map(event => {
+        const eventTime = new Date(event.at).getTime();
+        
+        // Find nearest bucket timestamp
+        let nearestTimestamp = times[0];
+        let minDiff = Math.abs(new Date(times[0]).getTime() - eventTime);
+        
+        times.forEach(bucketTime => {
+          const diff = Math.abs(new Date(bucketTime).getTime() - eventTime);
+          if (diff < minDiff) {
+            minDiff = diff;
+            nearestTimestamp = bucketTime;
+          }
+        });
+        
+        return {
+          label: event.label,
+          at: nearestTimestamp
+        };
+      });
 
       // Update chart
       chart.setOption(getChartOption(), true);
