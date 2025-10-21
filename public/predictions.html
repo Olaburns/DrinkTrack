@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Make Predictions - Drink Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <h1 class="header-title">
+        <span>🔮</span>
+        <span>Predictions</span>
+      </h1>
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <a href="/dashboard" class="btn btn-outline" data-testid="button-nav-dashboard">Dashboard</a>
+        <a href="/control" class="btn btn-outline" data-testid="button-nav-control">Control</a>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div class="card" style="max-width: 600px; margin: 2rem auto;">
+        <div class="card-header">
+          <h2 class="card-title">Predict Total Drinks Tonight</h2>
+          <p class="card-subtitle">How many drinks will each person have by the end of the night?</p>
+        </div>
+
+        <div id="predictionsContainer" style="padding: 1rem;">
+          <p id="loadingMessage" style="text-align: center; color: hsl(220, 9%, 46%);">Loading participants...</p>
+          <div id="predictionsList"></div>
+        </div>
+
+        <div id="lockedMessage" class="hidden" style="padding: 2rem; text-align: center;">
+          <p style="color: hsl(48, 96%, 53%); font-size: 1.125rem; font-weight: 600;">🔒 Predictions Locked</p>
+          <p style="color: hsl(220, 9%, 46%); margin-top: 0.5rem;">The host has locked predictions. No changes can be made.</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let participants = [];
+    let predictions = [];
+    let myParticipantId = localStorage.getItem('participantId');
+    let predictionsLocked = false;
+
+    async function fetchData() {
+      try {
+        const [participantsRes, predictionsRes, settingsRes] = await Promise.all([
+          fetch('/api/participants'),
+          fetch('/api/predictions'),
+          fetch('/api/event-settings')
+        ]);
+
+        participants = await participantsRes.json();
+        predictions = await predictionsRes.json();
+        const settings = await settingsRes.json();
+        predictionsLocked = settings.predictionsLocked;
+
+        renderPredictions();
+      } catch (err) {
+        console.error('Failed to fetch data:', err);
+        document.getElementById('loadingMessage').textContent = 'Failed to load. Please refresh.';
+      }
+    }
+
+    function renderPredictions() {
+      const container = document.getElementById('predictionsList');
+      const loadingMsg = document.getElementById('loadingMessage');
+      const lockedMsg = document.getElementById('lockedMessage');
+
+      if (predictionsLocked) {
+        loadingMsg.classList.add('hidden');
+        container.classList.add('hidden');
+        lockedMsg.classList.remove('hidden');
+        return;
+      }
+
+      lockedMsg.classList.add('hidden');
+      loadingMsg.classList.add('hidden');
+      container.classList.remove('hidden');
+
+      if (!myParticipantId) {
+        container.innerHTML = '<p style="text-align: center; color: hsl(220, 9%, 46%);">Please <a href="/join" style="color: hsl(262, 83%, 58%);">join the event</a> first to make predictions.</p>';
+        return;
+      }
+
+      const myPredictions = predictions.filter(p => p.predictorId === myParticipantId);
+      const predictionMap = {};
+      myPredictions.forEach(p => {
+        predictionMap[p.targetId] = p.predictedDrinks;
+      });
+
+      container.innerHTML = participants
+        .map(target => {
+          const currentPrediction = predictionMap[target.id] || '';
+          return `
+            <div class="prediction-item" style="display: flex; align-items: center; gap: 1rem; padding: 1rem; background: hsl(220, 15%, 10%); border-radius: 0.5rem; margin-bottom: 0.75rem;">
+              <div style="flex: 1;">
+                <p style="font-weight: 600; margin-bottom: 0.25rem;">${target.name}</p>
+                <p style="font-size: 0.875rem; color: hsl(220, 9%, 46%);">Self estimate: ${target.selfEstimate}</p>
+              </div>
+              <input 
+                type="number" 
+                class="form-input" 
+                placeholder="Predict" 
+                min="0" 
+                step="0.5" 
+                value="${currentPrediction}"
+                onchange="savePrediction('${target.id}', this.value)"
+                data-testid="input-prediction-${target.id}"
+                style="width: 120px;"
+              >
+            </div>
+          `;
+        })
+        .join('');
+    }
+
+    async function savePrediction(targetId, value) {
+      if (!myParticipantId) {
+        alert('Please join the event first');
+        return;
+      }
+
+      if (!value || value === '') {
+        return;
+      }
+
+      const predictedDrinks = parseFloat(value);
+
+      try {
+        const response = await fetch('/api/predictions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            predictorId: myParticipantId,
+            targetId,
+            predictedDrinks
+          })
+        });
+
+        if (response.ok) {
+          console.log('Prediction saved');
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Failed to save prediction');
+        }
+      } catch (err) {
+        console.error('Failed to save prediction:', err);
+        alert('Connection error');
+      }
+    }
+
+    // Setup SSE for live updates
+    function setupSSE() {
+      const eventSource = new EventSource('/events');
+
+      eventSource.addEventListener('participant-added', () => fetchData());
+      eventSource.addEventListener('participant-updated', () => fetchData());
+      eventSource.addEventListener('predictions-lock-changed', () => fetchData());
+
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error);
+      };
+    }
+
+    fetchData();
+    setupSSE();
+  </script>
+</body>
+</html>

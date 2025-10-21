@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 </head>
 <body>
   <div class="app-container">
@@ -23,6 +24,10 @@
           <div class="live-dot"></div>
           <span class="live-text">Live</span>
         </div>
+        <button class="btn btn-outline" onclick="showQRModal()" data-testid="button-show-qr">
+          <span>📱</span>
+          <span>Join QR</span>
+        </button>
         <a href="/control" class="btn btn-outline" data-testid="button-nav-control">
           <span>🍺</span>
           <span>Control Panel</span>
@@ -383,6 +388,52 @@
     }
 
     init();
+
+    // QR Code Modal
+    function showQRModal() {
+      const modal = document.getElementById('qrModal');
+      modal.classList.remove('hidden');
+      
+      // Generate QR code
+      const qrContainer = document.getElementById('qrcode');
+      qrContainer.innerHTML = ''; // Clear previous QR code
+      
+      const joinURL = window.location.origin + '/join';
+      new QRCode(qrContainer, {
+        text: joinURL,
+        width: 256,
+        height: 256,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
+    function closeQRModal(event) {
+      if (!event || event.target.classList.contains('modal-overlay')) {
+        document.getElementById('qrModal').classList.add('hidden');
+      }
+    }
   </script>
+
+  <!-- QR Code Modal -->
+  <div id="qrModal" class="modal-overlay hidden" onclick="closeQRModal(event)">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2 class="modal-title">Scan to Join</h2>
+      </div>
+      
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 2rem;">
+        <div id="qrcode" style="background: white; padding: 1rem; border-radius: 0.5rem;"></div>
+        <p style="text-align: center; color: hsl(220, 9%, 46%); font-size: 0.875rem;">
+          Scan this QR code with your phone to join the event and start tracking your drinks
+        </p>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="closeQRModal()" data-testid="button-close-qr">Close</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

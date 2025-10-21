@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Predictions Matrix - Drink Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .matrix-table {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+    .matrix-table table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+    .matrix-table th,
+    .matrix-table td {
+      padding: 0.75rem;
+      text-align: center;
+      border: 1px solid hsl(220, 15%, 15%);
+    }
+    .matrix-table th {
+      background: hsl(220, 15%, 12%);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .matrix-table td {
+      background: hsl(220, 15%, 10%);
+    }
+    .matrix-table th:first-child,
+    .matrix-table td:first-child {
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      background: hsl(220, 15%, 12%);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <h1 class="header-title">
+        <span>📊</span>
+        <span>Predictions Matrix</span>
+      </h1>
+      <div style="display: flex; align-items: center; gap: 1rem;">
+        <button class="btn btn-outline" onclick="showPasscodeModal()" data-testid="button-set-passcode">Set Passcode</button>
+        <button class="btn btn-outline" id="lockBtn" onclick="toggleLock()" data-testid="button-toggle-lock">
+          <span id="lockIcon">🔓</span>
+          <span id="lockText">Lock Predictions</span>
+        </button>
+        <a href="/awards" class="btn btn-primary" data-testid="button-reveal-awards">Reveal Awards</a>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div id="accessDenied" class="hidden" style="text-align: center; padding: 4rem;">
+        <h2 style="color: hsl(48, 96%, 53%); margin-bottom: 1rem;">🔒 Access Restricted</h2>
+        <p style="color: hsl(220, 9%, 46%); margin-bottom: 2rem;">This page is password protected.</p>
+        <button class="btn btn-primary" onclick="showPasscodePrompt()" data-testid="button-enter-passcode">Enter Passcode</button>
+      </div>
+
+      <div id="matrixContent" class="hidden">
+        <div class="matrix-table">
+          <table id="matrixTable">
+            <thead id="matrixHead"></thead>
+            <tbody id="matrixBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Passcode Set Modal -->
+  <div id="passcodeModal" class="modal-overlay hidden" onclick="closePasscodeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">Set Matrix Passcode</h2>
+      </div>
+      
+      <form id="passcodeForm" onsubmit="handleSetPasscode(event)">
+        <div class="form-group mb-0">
+          <label class="form-label" for="newPasscode">New Passcode</label>
+          <input type="password" id="newPasscode" class="form-input" placeholder="Enter passcode" required data-testid="input-new-passcode">
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closePasscodeModal()">Cancel</button>
+          <button type="submit" class="btn btn-primary" data-testid="button-save-passcode">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let matrixData = null;
+    let isAuthenticated = false;
+    let predictionsLocked = false;
+
+    async function checkAuth() {
+      try {
+        const response = await fetch('/api/event-settings');
+        const settings = await response.json();
+        
+        if (!settings.hasPasscode) {
+          isAuthenticated = true;
+          loadMatrix();
+        } else {
+          showAccessDenied();
+        }
+      } catch (err) {
+        console.error('Failed to check auth:', err);
+      }
+    }
+
+    function showAccessDenied() {
+      document.getElementById('accessDenied').classList.remove('hidden');
+      document.getElementById('matrixContent').classList.add('hidden');
+    }
+
+    function showPasscodePrompt() {
+      const passcode = prompt('Enter passcode:');
+      if (passcode) {
+        verifyPasscode(passcode);
+      }
+    }
+
+    async function verifyPasscode(passcode) {
+      try {
+        const response = await fetch('/api/passcode/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ passcode })
+        });
+
+        const result = await response.json();
+        if (result.valid) {
+          isAuthenticated = true;
+          loadMatrix();
+        } else {
+          alert('Incorrect passcode');
+        }
+      } catch (err) {
+        console.error('Failed to verify passcode:', err);
+        alert('Connection error');
+      }
+    }
+
+    async function loadMatrix() {
+      document.getElementById('accessDenied').classList.add('hidden');
+      document.getElementById('matrixContent').classList.remove('hidden');
+
+      try {
+        const response = await fetch('/api/matrix-data');
+        matrixData = await response.json();
+        predictionsLocked = matrixData.predictionsLocked;
+        
+        updateLockButton();
+        renderMatrix();
+      } catch (err) {
+        console.error('Failed to load matrix:', err);
+      }
+    }
+
+    function renderMatrix() {
+      if (!matrixData) return;
+
+      const { matrix, predictors } = matrixData;
+      
+      // Build header
+      const thead = document.getElementById('matrixHead');
+      thead.innerHTML = `
+        <tr>
+          <th>Target</th>
+          <th>Actual</th>
+          <th>Self Est.</th>
+          ${predictors.map(p => `<th>${p.name}</th>`).join('')}
+        </tr>
+      `;
+
+      // Build body
+      const tbody = document.getElementById('matrixBody');
+      tbody.innerHTML = matrix.map(row => {
+        return `
+          <tr>
+            <td style="text-align: left;"><strong>${row.target.name}</strong></td>
+            <td><strong>${row.actualDrinks}</strong></td>
+            <td>${row.selfEstimate}</td>
+            ${predictors.map(p => {
+              const pred = row.predictions[p.id];
+              return `<td>${pred !== undefined ? pred : '—'}</td>`;
+            }).join('')}
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function updateLockButton() {
+      const lockIcon = document.getElementById('lockIcon');
+      const lockText = document.getElementById('lockText');
+      
+      if (predictionsLocked) {
+        lockIcon.textContent = '🔒';
+        lockText.textContent = 'Unlock Predictions';
+      } else {
+        lockIcon.textContent = '🔓';
+        lockText.textContent = 'Lock Predictions';
+      }
+    }
+
+    async function toggleLock() {
+      try {
+        const response = await fetch('/api/event-settings/lock-predictions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locked: !predictionsLocked })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          predictionsLocked = result.predictionsLocked;
+          updateLockButton();
+        }
+      } catch (err) {
+        console.error('Failed to toggle lock:', err);
+        alert('Connection error');
+      }
+    }
+
+    function showPasscodeModal() {
+      document.getElementById('passcodeModal').classList.remove('hidden');
+    }
+
+    function closePasscodeModal(event) {
+      if (!event || event.target.classList.contains('modal-overlay')) {
+        document.getElementById('passcodeModal').classList.add('hidden');
+        document.getElementById('passcodeForm').reset();
+      }
+    }
+
+    async function handleSetPasscode(event) {
+      event.preventDefault();
+      
+      const passcode = document.getElementById('newPasscode').value;
+      
+      try {
+        const response = await fetch('/api/passcode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ passcode })
+        });
+
+        if (response.ok) {
+          alert('Passcode set successfully');
+          closePasscodeModal();
+          isAuthenticated = true;
+          loadMatrix();
+        } else {
+          alert('Failed to set passcode');
+        }
+      } catch (err) {
+        console.error('Failed to set passcode:', err);
+        alert('Connection error');
+      }
+    }
+
+    // Setup SSE for live updates
+    function setupSSE() {
+      const eventSource = new EventSource('/events');
+
+      eventSource.addEventListener('participant-added', () => {
+        if (isAuthenticated) loadMatrix();
+      });
+      
+      eventSource.addEventListener('participant-updated', () => {
+        if (isAuthenticated) loadMatrix();
+      });
+      
+      eventSource.addEventListener('prediction-added', () => {
+        if (isAuthenticated) loadMatrix();
+      });
+      
+      eventSource.addEventListener('prediction-updated', () => {
+        if (isAuthenticated) loadMatrix();
+      });
+      
+      eventSource.addEventListener('consumption', () => {
+        if (isAuthenticated) loadMatrix();
+      });
+      
+      eventSource.addEventListener('predictions-lock-changed', (event) => {
+        if (isAuthenticated) {
+          const data = JSON.parse(event.data);
+          predictionsLocked = data.locked;
+          updateLockButton();
+        }
+      });
+
+      eventSource.onerror = (error) => {
+        console.error('SSE error:', error);
+      };
+    }
+
+    checkAuth();
+    setupSSE();
+  </script>
+</body>
+</html>

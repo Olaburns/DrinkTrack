@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Awards - Drink Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .award-screen {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, hsl(262, 83%, 10%), hsl(220, 15%, 8%));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .award-content {
+      text-align: center;
+      max-width: 600px;
+    }
+    .award-name {
+      font-size: 3rem;
+      font-weight: 900;
+      color: hsl(48, 96%, 53%);
+      margin-bottom: 2rem;
+      text-shadow: 0 0 20px hsla(48, 96%, 53%, 0.5);
+    }
+    .winner-card {
+      background: hsla(220, 15%, 20%, 0.5);
+      backdrop-filter: blur(10px);
+      border: 1px solid hsl(220, 15%, 25%);
+      border-radius: 1rem;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+    .winner-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 1rem;
+      background: hsl(220, 15%, 15%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+    .winner-name {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: white;
+    }
+    .nav-buttons {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="award-screen">
+    <div class="award-content">
+      <div id="awardDisplay"></div>
+      
+      <div class="nav-buttons">
+        <button class="btn btn-outline" onclick="prevAward()" id="prevBtn" data-testid="button-prev-award">
+          ← Previous
+        </button>
+        <button class="btn btn-outline" onclick="nextAward()" id="nextBtn" data-testid="button-next-award">
+          Next →
+        </button>
+        <a href="/matrix" class="btn btn-primary" data-testid="button-back-matrix">Back to Matrix</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let awards = [];
+    let currentIndex = 0;
+
+    async function loadAwards() {
+      try {
+        const response = await fetch('/api/awards');
+        awards = await response.json();
+        
+        if (awards.length === 0) {
+          document.getElementById('awardDisplay').innerHTML = `
+            <div class="award-name">No Awards Yet</div>
+            <p style="color: hsl(220, 9%, 46%); font-size: 1.125rem;">
+              Not enough data to compute awards. Make sure participants have drinks recorded and predictions submitted.
+            </p>
+          `;
+          return;
+        }
+        
+        renderAward();
+      } catch (err) {
+        console.error('Failed to load awards:', err);
+        document.getElementById('awardDisplay').innerHTML = `
+          <div class="award-name">Error</div>
+          <p style="color: hsl(220, 9%, 46%);">Failed to load awards. Please refresh.</p>
+        `;
+      }
+    }
+
+    function renderAward() {
+      if (awards.length === 0) return;
+
+      const award = awards[currentIndex];
+      const display = document.getElementById('awardDisplay');
+      
+      display.innerHTML = `
+        <div class="award-name">${award.name}</div>
+        ${award.winners.map(winner => `
+          <div class="winner-card">
+            <div class="winner-avatar">
+              ${winner.avatar ? `<img src="${winner.avatar}" alt="${winner.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : '🍹'}
+            </div>
+            <div class="winner-name">${winner.name}</div>
+          </div>
+        `).join('')}
+      `;
+
+      // Update button states
+      document.getElementById('prevBtn').disabled = currentIndex === 0;
+      document.getElementById('nextBtn').disabled = currentIndex === awards.length - 1;
+    }
+
+    function prevAward() {
+      if (currentIndex > 0) {
+        currentIndex--;
+        renderAward();
+      }
+    }
+
+    function nextAward() {
+      if (currentIndex < awards.length - 1) {
+        currentIndex++;
+        renderAward();
+      }
+    }
+
+    loadAwards();
+  </script>
+</body>
+</html>
