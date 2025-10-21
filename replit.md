@@ -16,11 +16,22 @@ Track consumed drinks over time during social events with live visualization, ev
 - **NEW**: Multi-participant prediction game with awards system
 
 ## Recent Changes
-**2025-10-21**: Security improvements
-- Added express-session for proper server-side authentication
-- Protected /api/matrix-data endpoint with session-based authentication middleware
-- Fixed client-side only passcode protection vulnerability
-- Session persists for 24 hours with httpOnly, sameSite cookies
+**2025-10-21**: Comprehensive security hardening
+- **Session-based authentication**: express-session with httpOnly, sameSite=strict cookies (24hr persistence)
+- **Protected endpoints**: requireAuth middleware on all sensitive routes:
+  - Matrix data: GET /api/matrix-data
+  - Participant/prediction access: GET /api/participants, GET /api/predictions
+  - Snapshot operations: POST /api/snapshot, GET /api/snapshot/latest, POST /api/snapshot/restore
+  - Admin controls: POST /api/event-settings/lock-predictions
+- **SSE security**: Per-connection authentication tracking with filtered broadcasts
+  - Sensitive events (participant-*, prediction-*) only sent to authenticated clients
+  - Consumption events strip participantId for unauthenticated clients
+  - Removed CORS headers (same-origin only)
+- **Passcode protection**: 
+  - Passcode can only be set once (prevents overwriting attacks)
+  - All SSE connections terminated when passcode set (forces re-authentication)
+  - Session regeneration on successful authentication
+- **Data validation**: Predictions require valid participant IDs (prevents injection)
 
 **2025-10-21**: Participant prediction game system
 - Added participant registration via /join page (name, avatar, self-estimate)
@@ -123,24 +134,24 @@ Track consumed drinks over time during social events with live visualization, ev
 - `POST /event` → create event marker
 
 **API - Participants & Predictions**
-- `GET /api/participants` → list all participants
+- `GET /api/participants` → list all participants **(protected)**
 - `POST /api/participants` → register participant
 - `PATCH /api/participants/:id` → update participant
-- `GET /api/predictions` → list all predictions
-- `POST /api/predictions` → save prediction
+- `GET /api/predictions` → list all predictions **(protected)**
+- `POST /api/predictions` → save prediction (validates participant IDs)
 - `GET /api/event-settings` → get settings (predictionsLocked, hasPasscode)
-- `POST /api/event-settings/lock-predictions` → lock/unlock predictions
+- `POST /api/event-settings/lock-predictions` → lock/unlock predictions **(protected)**
 
-**API - Matrix & Awards (Protected)**
-- `POST /api/passcode` → set matrix passcode (authenticates session)
+**API - Matrix & Awards**
+- `POST /api/passcode` → set matrix passcode (one-time only, authenticates session)
 - `POST /api/passcode/verify` → verify passcode (authenticates session)
-- `GET /api/matrix-data` → get matrix data (requires authentication)
+- `GET /api/matrix-data` → get matrix data **(protected)**
 - `GET /api/awards` → compute and return awards
 
-**API - Snapshots**
-- `POST /api/snapshot` → force snapshot
-- `GET /api/snapshot/latest` → download latest snapshot
-- `POST /api/snapshot/restore` → restore from latest snapshot
+**API - Snapshots (Protected)**
+- `POST /api/snapshot` → force snapshot **(protected)**
+- `GET /api/snapshot/latest` → download latest snapshot **(protected)**
+- `POST /api/snapshot/restore` → restore from latest snapshot **(protected)**
 
 ## User Preferences
 - **Tech Stack**: Node.js 20 + Express + vanilla JS (no React/bundler)
