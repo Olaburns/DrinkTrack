@@ -1,0 +1,58 @@
+1.	QR join from main dashboard
+	•	Show a QR code on the main dashboard that deep-links to join
+	•	The join page asks for:
+	•	Name (required, unique per event).
+	•	Avatar (optional; accept image upload or URL).
+	•	Self estimate: integer (or decimal) of total drinks they expect to have tonight.
+	•	On submit: create (or upsert) the participant for that eventId, then redirect to their Control Panel.
+	2.	After joining
+	•	Participants retain access to:
+	•	Their Control Panel (show their current actual drinks and self estimate; allow updating self estimate until host locks predictions).
+	•	The existing Dashboard.
+	•	A new Predictions area where they can submit a predicted total drinks tonight for each other registered participant.
+
+Predictions matrix view (protected)
+	•	Add a new route e.g. /matrix that is not publicly visible.
+	•	Gate access with either:
+	•	a simple passcode prompt (host-set per event), or
+	•	existing authenticated “host” role if already present.
+(Implement at least the passcode; store only a hash; passcode can be set when creating the event or via host settings.)
+	•	The matrix is live-updating. Rows = target participants. Columns = predictors.
+	•	First columns (left to right): Target (name + avatar/emoji), Actual drinks (live), Self estimate (target’s own), then one column per predictor (including “You” when the viewer is a participant).
+	•	Cell value = predictor’s predicted total for the row’s target.
+	•	Missing prediction = show “—”.
+	•	Provide horizontal scroll if needed; keep header sticky; allow quick filter “Show only my predictions”.
+
+Reveal controls (protected)
+	•	On the /matrix page (host-only via passcode), add:
+	•	Lock predictions toggle: when ON, participants can no longer edit or add predictions/self estimate.
+	•	Reveal Matrix button: toggles a big-screen friendly mode (no extra navigation), but does not change routes (we’ll handle display casting externally).
+	•	Reveal Awards button: runs award computation and presents awards one-by-one with a simple full-screen overlay and “Next”/“Previous”.
+
+Awards (German labels, tie-aware)
+
+Compute using the final actual drinks per participant and the submitted predictions at the moment Reveal Awards is triggered (or re-compute on each award screen if host navigates back).
+
+Display rule for each award:
+	•	Show award name in German, winners’ name(s), and their avatar if available; else use a neutral emoji (🍹). If multiple winners tie, show all of them.
+
+Definitions (let A[i] be actual drinks of participant i at reveal time; P[j][i] be predictor j’s prediction for target i; predictions may be absent):
+	1.	“Kotzstempel” – person(s) with the highest A[i].
+	•	Ties allowed → multiple winners.
+	2.	“Spülsüchtigen” – predictor(s) whose predictions are closest overall.
+	•	For each predictor j, compute MAE over all targets with known A[i] and where P[j][i] exists:
+MAE_j = mean_i |P[j][i] - A[i]|.
+	•	Require a minimum coverage to be eligible: predictor must have predictions for at least 50% of registered participants with known A[i]. If no one meets 50%, lower to 33% and then to “at least 1”.
+	•	Lowest MAE_j wins; ties allowed.
+	3.	“Stille Wasser sind tief” – the person most underestimated/overestimated by others (hardest to predict).
+	•	For each target i, compute crowd error MAE across all predictors with P[j][i]:
+CrowdMAE_i = mean_j |P[j][i] - A[i]|.
+	•	Require at least 2 incoming predictions to be eligible; otherwise skip that person.
+	•	Highest CrowdMAE_i wins; ties allowed.
+	4.	“Schwarzer Peter” – the predictor most off overall with their estimates.
+	•	Same as Spülsüchtigen but highest MAE_j (same eligibility rule); ties allowed.
+
+Implementation notes:
+	•	Self-predictions (P[i][i]) count for Spülsüchtigen/Schwarzer Peter eligibility and error, and appear in the matrix’s Self estimate column for the row owner. For consistency, include P[i][i] in the MAE calculations.
+	•	All MAE calculations use absolute value; decimals allowed.
+	•	If actual drinks A[i] are still changing (night in progress), awards should compute using the current A[i] at the moment of reveal. If host reopens/reveals again later, recompute live.

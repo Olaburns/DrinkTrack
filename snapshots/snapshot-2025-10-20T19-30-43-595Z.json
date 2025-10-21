@@ -47,6 +47,18 @@
       "emoji": "",
       "imageUrl": "https://api.cocktails.de/sites/default/files/styles/is_detail/public/cocktails-gin-tonic_7.jpg?itok=Uejui1bf",
       "color": "#14B8A6"
+    },
+    {
+      "name": "Moskau Mule",
+      "emoji": "",
+      "imageUrl": "https://api.cocktails.de/sites/default/files/styles/is_detail/public/cocktails-gin-tonic_7.jpg?itok=Uejui1bf",
+      "color": "#F59E0B"
+    },
+    {
+      "name": "Neuer Drink",
+      "emoji": "",
+      "imageUrl": "https://api.cocktails.de/sites/default/files/styles/is_detail/public/cocktails-gin-tonic_7.jpg?itok=Uejui1bf",
+      "color": "#8B5CF6"
     }
   ],
   "consumptions": [
@@ -125,6 +137,54 @@
     {
       "drinkName": "Sparkling",
       "at": "2025-10-20T16:15:01.710Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-20T16:18:31.143Z"
+    },
+    {
+      "drinkName": "Mojito",
+      "at": "2025-10-20T16:20:34.018Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-20T16:20:43.961Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-20T16:20:45.574Z"
+    },
+    {
+      "drinkName": "Gin Tonic",
+      "at": "2025-10-20T16:20:46.408Z"
+    },
+    {
+      "drinkName": "Longdrink",
+      "at": "2025-10-20T16:20:47.610Z"
+    },
+    {
+      "drinkName": "Whisky",
+      "at": "2025-10-20T16:22:16.103Z"
+    },
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-20T16:22:22.100Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-20T16:22:25.060Z"
+    },
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-20T16:22:27.153Z"
+    },
+    {
+      "drinkName": "Longdrink",
+      "at": "2025-10-20T16:22:28.210Z"
+    },
+    {
+      "drinkName": "Neuer Drink",
+      "at": "2025-10-20T16:22:29.960Z"
     }
   ],
   "events": [
