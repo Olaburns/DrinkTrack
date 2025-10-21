@@ -159,6 +159,14 @@
 
       try {
         const response = await fetch('/api/matrix-data');
+        
+        // Handle 401 Unauthorized
+        if (response.status === 401) {
+          isAuthenticated = false;
+          showAccessDenied();
+          return;
+        }
+        
         matrixData = await response.json();
         predictionsLocked = matrixData.predictionsLocked;
         

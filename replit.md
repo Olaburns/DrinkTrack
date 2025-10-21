@@ -7,12 +7,30 @@ A zero-friction, real-time drink tracking application designed for bar nights an
 Track consumed drinks over time during social events with live visualization, event markers, and automatic crash protection via snapshots. Multiple people can access the app on the same network simultaneously.
 
 ## Current State
-✅ **Fully Functional MVP** - All features implemented and tested
+✅ **Fully Functional MVP with Prediction Game** - All features implemented and tested
 - Express server with Server-Sent Events (SSE) for sub-second real-time updates
 - In-memory storage with automatic snapshots every 120 seconds
 - Premium dark theme UI with glass morphism effects
 - ECharts-powered live time-series visualization
 - LAN accessibility with network URL detection
+- **NEW**: Multi-participant prediction game with awards system
+
+## Recent Changes
+**2025-10-21**: Security improvements
+- Added express-session for proper server-side authentication
+- Protected /api/matrix-data endpoint with session-based authentication middleware
+- Fixed client-side only passcode protection vulnerability
+- Session persists for 24 hours with httpOnly, sameSite cookies
+
+**2025-10-21**: Participant prediction game system
+- Added participant registration via /join page (name, avatar, self-estimate)
+- Created predictions system allowing participants to predict others' totals
+- Implemented password-protected matrix view showing all predictions
+- Added German-labeled awards system (Kotzstempel, Spülsüchtigen, Stille Wasser, Schwarzer Peter)
+- Added QR code to dashboard for easy participant joining via mobile devices
+- Participant-specific drink tracking with localStorage session management
+- Real-time updates via SSE for participants and predictions
+- Lock/unlock mechanism to freeze predictions before reveal
 
 ## Recent Changes
 **2025-10-20**: Quality improvements
@@ -37,8 +55,9 @@ Track consumed drinks over time during social events with live visualization, ev
 
 ### Backend (server.js)
 - **Express server** binding to `0.0.0.0:5000`
-- **In-memory storage**: drinks, consumptions, events
+- **In-memory storage**: drinks, consumptions, events, participants, predictions, eventSettings
 - **SSE endpoint** (`/events`) for real-time push updates
+- **Session management**: express-session with httpOnly cookies for matrix authentication
 - **Snapshot system**: 
   - Automatic snapshots every 120s
   - Atomic writes (temp file → rename)
@@ -71,21 +90,54 @@ Track consumed drinks over time during social events with live visualization, ev
 { name: string, emoji?: string, imageUrl?: string, color?: string }
 
 // Consumptions
-{ drinkName: string, at: Date }
+{ drinkName: string, participantId?: string, at: Date }
 
 // Events
 { label: string, color?: string, at: Date }
+
+// Participants
+{ id: string, name: string, avatar?: string, selfEstimate: number }
+
+// Predictions
+{ id: string, predictorId: string, targetId: string, predictedDrinks: number }
+
+// Event Settings
+{ passcodeHash: string | null, predictionsLocked: boolean }
 ```
 
 ### API Endpoints
+**Pages**
 - `GET /` → redirect to /dashboard
 - `GET /dashboard` → dashboard view
 - `GET /control` → control panel view
-- `GET /events` → SSE stream (stats, consumption, event, heartbeat)
+- `GET /join` → participant registration page
+- `GET /predictions` → predictions page
+- `GET /matrix` → password-protected matrix view
+- `GET /awards` → awards display page
+
+**API - Core Functionality**
+- `GET /events` → SSE stream (stats, consumption, event, participant-*, prediction-*, heartbeat)
 - `GET /drinks` → list all drinks
 - `POST /drinks` → create new drink
-- `POST /consume` → record consumption
+- `POST /consume` → record consumption (with optional participantId)
 - `POST /event` → create event marker
+
+**API - Participants & Predictions**
+- `GET /api/participants` → list all participants
+- `POST /api/participants` → register participant
+- `PATCH /api/participants/:id` → update participant
+- `GET /api/predictions` → list all predictions
+- `POST /api/predictions` → save prediction
+- `GET /api/event-settings` → get settings (predictionsLocked, hasPasscode)
+- `POST /api/event-settings/lock-predictions` → lock/unlock predictions
+
+**API - Matrix & Awards (Protected)**
+- `POST /api/passcode` → set matrix passcode (authenticates session)
+- `POST /api/passcode/verify` → verify passcode (authenticates session)
+- `GET /api/matrix-data` → get matrix data (requires authentication)
+- `GET /api/awards` → compute and return awards
+
+**API - Snapshots**
 - `POST /api/snapshot` → force snapshot
 - `GET /api/snapshot/latest` → download latest snapshot
 - `POST /api/snapshot/restore` → restore from latest snapshot

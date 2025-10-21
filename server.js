@@ -1,4 +1,5 @@
 import express from 'express';
+import session from 'express-session';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { writeFile, readFile, readdir, unlink, mkdir, rename } from 'fs/promises';
@@ -16,6 +17,19 @@ const SNAPSHOT_MAX_FILES = parseInt(process.env.SNAPSHOT_MAX_FILES) || 30;
 
 const app = express();
 app.use(express.json());
+
+// Configure session middleware
+app.use(session({
+  secret: process.env.SESSION_SECRET || randomBytes(32).toString('hex'),
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'strict',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
 app.use(express.static(join(__dirname, 'public')));
 
 // In-memory state
@@ -38,8 +52,8 @@ let state = {
   }
 };
 
-// SSE clients
-let sseClients = [];
+// SSE clients - track connection and auth status
+let sseClients = []; // Array of { res, isAuthenticated }
 
 // Helper: Get LAN IPv4 address
 function getLanIp() {
@@ -58,9 +72,19 @@ function getLanIp() {
 // Helper: Broadcast SSE event
 function broadcastSSE(event, data) {
   const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  
+  // Sensitive events that should only go to authenticated clients
+  const sensitiveEvents = ['participant-added', 'participant-updated', 'prediction-added', 'prediction-updated'];
+  const isSensitive = sensitiveEvents.includes(event);
+  
   sseClients.forEach(client => {
     try {
-      client.write(message);
+      // Filter sensitive events - only send to authenticated clients
+      if (isSensitive && !client.isAuthenticated) {
+        return; // Skip this client
+      }
+      
+      client.res.write(message);
     } catch (err) {
       console.error('Error sending SSE:', err);
     }
@@ -428,11 +452,15 @@ app.get('/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // Removed CORS header for security - same-origin only
   
-  // Add client
-  sseClients.push(res);
-  console.log(`SSE client connected (${sseClients.length} total)`);
+  // Check if client is authenticated (for filtering sensitive events)
+  const isAuthenticated = !state.eventSettings.passcodeHash || (req.session && req.session.authenticated);
+  
+  // Add client with auth status
+  const client = { res, isAuthenticated };
+  sseClients.push(client);
+  console.log(`SSE client connected (${sseClients.length} total, authenticated: ${isAuthenticated})`);
   
   // Send initial stats
   const stats = getAggregatedStats();
@@ -450,7 +478,7 @@ app.get('/events', (req, res) => {
   // Handle disconnect
   req.on('close', () => {
     clearInterval(heartbeatInterval);
-    sseClients = sseClients.filter(client => client !== res);
+    sseClients = sseClients.filter(c => c.res !== res);
     console.log(`SSE client disconnected (${sseClients.length} remaining)`);
   });
 });
@@ -624,7 +652,15 @@ app.post('/api/passcode', (req, res) => {
   }
   
   state.eventSettings.passcodeHash = hashPasscode(passcode);
-  res.json({ message: 'Passcode set successfully' });
+  
+  // Regenerate session and authenticate
+  req.session.regenerate((err) => {
+    if (err) {
+      console.error('Session regeneration error:', err);
+    }
+    req.session.authenticated = true;
+    res.json({ message: 'Passcode set successfully' });
+  });
 });
 
 app.post('/api/passcode/verify', (req, res) => {
@@ -635,7 +671,19 @@ app.post('/api/passcode/verify', (req, res) => {
   }
   
   const valid = verifyPasscode(passcode);
-  res.json({ valid });
+  
+  // Regenerate session and authenticate if valid
+  if (valid) {
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error('Session regeneration error:', err);
+      }
+      req.session.authenticated = true;
+      res.json({ valid });
+    });
+  } else {
+    res.json({ valid });
+  }
 });
 
 // Participant management
@@ -746,7 +794,7 @@ app.get('/api/event-settings', (req, res) => {
   });
 });
 
-app.post('/api/event-settings/lock-predictions', (req, res) => {
+app.post('/api/event-settings/lock-predictions', requireAuth, (req, res) => {
   const { locked } = req.body;
   
   state.eventSettings.predictionsLocked = !!locked;
@@ -803,8 +851,24 @@ app.get('/api/awards', (req, res) => {
   res.json(awards);
 });
 
-// Matrix data
-app.get('/api/matrix-data', (req, res) => {
+// Authentication middleware for protected routes
+function requireAuth(req, res, next) {
+  // If no passcode is set, allow access
+  if (!state.eventSettings.passcodeHash) {
+    return next();
+  }
+  
+  // Check session authentication
+  if (req.session && req.session.authenticated) {
+    return next();
+  }
+  
+  // Unauthorized
+  return res.status(401).json({ error: 'Unauthorized. Please verify passcode.' });
+}
+
+// Matrix data (protected route)
+app.get('/api/matrix-data', requireAuth, (req, res) => {
   const participants = state.participants;
   const predictions = state.predictions;
   
