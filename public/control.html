@@ -15,9 +15,13 @@
     <header class="header">
       <h1 class="header-title">
         <span>🍺</span>
-        <span>Track Drinks</span>
+        <span id="headerTitle">Track Drinks</span>
       </h1>
       <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <a href="/predictions" class="btn btn-outline" data-testid="button-nav-predictions">
+          <span>🔮</span>
+          <span>Predictions</span>
+        </a>
         <a href="/dashboard" class="btn btn-outline" data-testid="button-nav-dashboard">
           <span>📊</span>
           <span>Dashboard</span>
@@ -129,6 +133,13 @@
     let selectedEventColor = '#F59E0B'; // Default amber for events
     let totalDrinksCount = 0;
     let consumeInProgress = false;
+    let myParticipantId = localStorage.getItem('participantId');
+    let myParticipantName = localStorage.getItem('participantName');
+
+    // Update header with participant info
+    if (myParticipantName) {
+      document.getElementById('headerTitle').textContent = `${myParticipantName}'s Drinks`;
+    }
 
     const colorOptions = [
       '#F59E0B', '#DC2626', '#D97706', '#EC4899', 
@@ -224,10 +235,15 @@
       consumeInProgress = true;
       
       try {
+        const requestBody = { drinkName };
+        if (myParticipantId) {
+          requestBody.participantId = myParticipantId;
+        }
+        
         const response = await fetch('/consume', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ drinkName })
+          body: JSON.stringify(requestBody)
         });
 
         if (response.ok) {
