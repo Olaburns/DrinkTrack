@@ -71,19 +71,25 @@ function getLanIp() {
 
 // Helper: Broadcast SSE event
 function broadcastSSE(event, data) {
-  const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-  
   // Sensitive events that should only go to authenticated clients
   const sensitiveEvents = ['participant-added', 'participant-updated', 'prediction-added', 'prediction-updated'];
   const isSensitive = sensitiveEvents.includes(event);
   
   sseClients.forEach(client => {
     try {
-      // Filter sensitive events - only send to authenticated clients
+      // Skip sensitive events for unauthenticated clients
       if (isSensitive && !client.isAuthenticated) {
-        return; // Skip this client
+        return;
       }
       
+      // For consumption events, filter participantId for unauthenticated clients
+      let eventData = data;
+      if (event === 'consumption' && !client.isAuthenticated && data.participantId) {
+        eventData = { ...data };
+        delete eventData.participantId;
+      }
+      
+      const message = `event: ${event}\ndata: ${JSON.stringify(eventData)}\n\n`;
       client.res.write(message);
     } catch (err) {
       console.error('Error sending SSE:', err);
@@ -574,8 +580,8 @@ app.post('/event', (req, res) => {
   res.status(201).json(event);
 });
 
-// Manual snapshot endpoints
-app.post('/api/snapshot', async (req, res) => {
+// Manual snapshot endpoints (protected)
+app.post('/api/snapshot', requireAuth, async (req, res) => {
   try {
     const filename = await saveSnapshot();
     res.json({ message: 'Snapshot created', filename });
@@ -584,7 +590,7 @@ app.post('/api/snapshot', async (req, res) => {
   }
 });
 
-app.get('/api/snapshot/latest', async (req, res) => {
+app.get('/api/snapshot/latest', requireAuth, async (req, res) => {
   try {
     if (!existsSync(SNAPSHOT_DIR)) {
       return res.status(404).json({ error: 'No snapshots available' });
@@ -609,7 +615,7 @@ app.get('/api/snapshot/latest', async (req, res) => {
   }
 });
 
-app.post('/api/snapshot/restore', async (req, res) => {
+app.post('/api/snapshot/restore', requireAuth, async (req, res) => {
   try {
     const restored = await restoreSnapshot();
     if (restored) {
@@ -651,7 +657,22 @@ app.post('/api/passcode', (req, res) => {
     return res.status(400).json({ error: 'Passcode is required' });
   }
   
+  // Only allow setting passcode if not already set
+  if (state.eventSettings.passcodeHash) {
+    return res.status(403).json({ error: 'Passcode already set. Cannot overwrite.' });
+  }
+  
   state.eventSettings.passcodeHash = hashPasscode(passcode);
+  
+  // Terminate all SSE connections to force re-authentication
+  sseClients.forEach(client => {
+    try {
+      client.res.end();
+    } catch (err) {
+      console.error('Error closing SSE connection:', err);
+    }
+  });
+  sseClients = [];
   
   // Regenerate session and authenticate
   req.session.regenerate((err) => {
@@ -686,8 +707,8 @@ app.post('/api/passcode/verify', (req, res) => {
   }
 });
 
-// Participant management
-app.get('/api/participants', (req, res) => {
+// Participant management (protected)
+app.get('/api/participants', requireAuth, (req, res) => {
   res.json(state.participants);
 });
 
@@ -744,8 +765,8 @@ app.patch('/api/participants/:id', (req, res) => {
   res.json(participant);
 });
 
-// Prediction management
-app.get('/api/predictions', (req, res) => {
+// Prediction management (protected)
+app.get('/api/predictions', requireAuth, (req, res) => {
   res.json(state.predictions);
 });
 
@@ -758,6 +779,18 @@ app.post('/api/predictions', (req, res) => {
   
   if (predictedDrinks === undefined || predictedDrinks === null) {
     return res.status(400).json({ error: 'predictedDrinks is required' });
+  }
+  
+  // Validate that both participants exist
+  const predictor = state.participants.find(p => p.id === predictorId);
+  const target = state.participants.find(p => p.id === targetId);
+  
+  if (!predictor) {
+    return res.status(404).json({ error: 'Predictor not found' });
+  }
+  
+  if (!target) {
+    return res.status(404).json({ error: 'Target participant not found' });
   }
   
   if (state.eventSettings.predictionsLocked) {

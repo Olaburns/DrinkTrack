@@ -205,5 +205,11 @@
       "color": "#D97706",
       "at": "2025-10-20T16:13:44.987Z"
     }
-  ]
+  ],
+  "participants": [],
+  "predictions": [],
+  "eventSettings": {
+    "passcodeHash": null,
+    "predictionsLocked": false
+  }
 }
