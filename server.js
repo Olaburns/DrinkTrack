@@ -559,7 +559,7 @@ app.post('/drinks', (req, res) => {
 
 // Record consumption
 app.post('/consume', (req, res) => {
-  const { drinkName } = req.body;
+  const { drinkName, participantId } = req.body;
   
   if (!drinkName) {
     return res.status(400).json({ error: 'drinkName is required' });
@@ -575,6 +575,11 @@ app.post('/consume', (req, res) => {
     drinkName,
     at: new Date().toISOString()
   };
+  
+  // Include participantId if provided
+  if (participantId) {
+    consumption.participantId = participantId;
+  }
   
   state.consumptions.push(consumption);
   
