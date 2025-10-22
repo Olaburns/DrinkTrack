@@ -1,5 +1,7 @@
 import express from 'express';
 import session from 'express-session';
+import connectPgSimple from 'connect-pg-simple';
+import pg from 'pg';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { writeFile, readFile, readdir, unlink, mkdir, rename } from 'fs/promises';
@@ -14,13 +16,73 @@ const PORT = process.env.PORT || 5000;
 const SNAPSHOT_INTERVAL_SEC = parseInt(process.env.SNAPSHOT_INTERVAL_SEC) || 120;
 const SNAPSHOT_DIR = process.env.SNAPSHOT_DIR || './snapshots';
 const SNAPSHOT_MAX_FILES = parseInt(process.env.SNAPSHOT_MAX_FILES) || 30;
+const SESSION_SECRET_FILE = './.session-secret';
+
+// Get or generate a stable session secret
+async function getSessionSecret() {
+  // Use environment variable if set
+  if (process.env.SESSION_SECRET) {
+    return process.env.SESSION_SECRET;
+  }
+  
+  // Try to read from file
+  try {
+    if (existsSync(SESSION_SECRET_FILE)) {
+      const secret = await readFile(SESSION_SECRET_FILE, 'utf8');
+      if (secret && secret.length > 0) {
+        console.log('✓ Using persisted session secret from file');
+        return secret.trim();
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to read session secret file:', err.message);
+  }
+  
+  // Generate new secret and persist it
+  const newSecret = randomBytes(32).toString('hex');
+  try {
+    await writeFile(SESSION_SECRET_FILE, newSecret, 'utf8');
+    console.log('✓ Generated and saved new session secret');
+  } catch (err) {
+    console.error('⚠️  WARNING: Failed to persist session secret!');
+    console.error('   Sessions will not survive server restarts:', err.message);
+  }
+  
+  return newSecret;
+}
+
+// Initialize session secret
+const sessionSecret = await getSessionSecret();
+
+// PostgreSQL connection pool for session storage
+if (!process.env.DATABASE_URL) {
+  console.error('\n❌ ERROR: DATABASE_URL not set!');
+  console.error('   Sessions require a PostgreSQL database for persistence.');
+  console.error('   Please set DATABASE_URL environment variable.\n');
+  process.exit(1);
+}
+
+const pgPool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL
+});
+
+// Handle pool errors to prevent silent crashes
+pgPool.on('error', (err) => {
+  console.error('PostgreSQL pool error:', err);
+});
 
 const app = express();
 app.use(express.json());
 
-// Configure session middleware
+// Configure session middleware with PostgreSQL store
+const PgSession = connectPgSimple(session);
 app.use(session({
-  secret: process.env.SESSION_SECRET || randomBytes(32).toString('hex'),
+  store: new PgSession({
+    pool: pgPool,
+    tableName: 'session',
+    createTableIfMissing: true
+  }),
+  secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
   cookie: {
@@ -72,7 +134,7 @@ function getLanIp() {
 // Helper: Broadcast SSE event
 function broadcastSSE(event, data) {
   // Sensitive events that should only go to authenticated clients
-  const sensitiveEvents = ['participant-added', 'participant-updated', 'prediction-added', 'prediction-updated'];
+  const sensitiveEvents = ['participant-added', 'participant-updated', 'participant-removed', 'prediction-added', 'prediction-updated'];
   const isSensitive = sensitiveEvents.includes(event);
   
   sseClients.forEach(client => {
@@ -868,6 +930,30 @@ app.patch('/api/participants/:id', (req, res) => {
   
   broadcastSSE('participant-updated', participant);
   res.json(participant);
+});
+
+// Delete participant (protected)
+app.delete('/api/participants/:id', requireAuth, (req, res) => {
+  const { id } = req.params;
+  
+  const participantIndex = state.participants.findIndex(p => p.id === id);
+  if (participantIndex === -1) {
+    return res.status(404).json({ error: 'Participant not found' });
+  }
+  
+  const participant = state.participants[participantIndex];
+  
+  // Remove participant
+  state.participants.splice(participantIndex, 1);
+  
+  // Remove all predictions made by this participant
+  state.predictions = state.predictions.filter(p => p.predictorId !== id && p.targetId !== id);
+  
+  // Remove all consumptions by this participant
+  state.consumptions = state.consumptions.filter(c => c.participantId !== id);
+  
+  broadcastSSE('participant-removed', { id });
+  res.json({ success: true, removed: participant });
 });
 
 // Prediction management (protected)
