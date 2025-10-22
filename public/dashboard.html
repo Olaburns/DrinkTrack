@@ -390,7 +390,7 @@
     init();
 
     // QR Code Modal
-    function showQRModal() {
+    async function showQRModal() {
       const modal = document.getElementById('qrModal');
       modal.classList.remove('hidden');
       
@@ -398,7 +398,18 @@
       const qrContainer = document.getElementById('qrcode');
       qrContainer.innerHTML = ''; // Clear previous QR code
       
-      const joinURL = window.location.origin + '/join';
+      // Fetch network info to use LAN IP
+      let joinURL = window.location.origin + '/join';
+      try {
+        const response = await fetch('/api/network-info');
+        if (response.ok) {
+          const { lanIp, port } = await response.json();
+          joinURL = `http://${lanIp}:${port}/join`;
+        }
+      } catch (err) {
+        console.error('Failed to fetch network info:', err);
+      }
+      
       new QRCode(qrContainer, {
         text: joinURL,
         width: 256,

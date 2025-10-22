@@ -889,6 +889,15 @@ app.get('/api/awards', (req, res) => {
   res.json(awards);
 });
 
+// Network info
+app.get('/api/network-info', (req, res) => {
+  const lanIp = getLanIp();
+  res.json({ 
+    lanIp,
+    port: PORT
+  });
+});
+
 // Authentication middleware for protected routes
 function requireAuth(req, res, next) {
   // If no passcode is set, allow access
