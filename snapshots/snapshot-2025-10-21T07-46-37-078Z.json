@@ -185,6 +185,10 @@
     {
       "drinkName": "Neuer Drink",
       "at": "2025-10-20T16:22:29.960Z"
+    },
+    {
+      "drinkName": "Moskau Mule",
+      "at": "2025-10-21T07:44:17.573Z"
     }
   ],
   "events": [
@@ -206,8 +210,22 @@
       "at": "2025-10-20T16:13:44.987Z"
     }
   ],
-  "participants": [],
-  "predictions": [],
+  "participants": [
+    {
+      "id": "763192a8e2db025b66ea39b5d0778c80",
+      "name": "Simon",
+      "avatar": "",
+      "selfEstimate": 10
+    }
+  ],
+  "predictions": [
+    {
+      "id": "be649c9fefd2cf0f55d907587513a0a4",
+      "predictorId": "763192a8e2db025b66ea39b5d0778c80",
+      "targetId": "763192a8e2db025b66ea39b5d0778c80",
+      "predictedDrinks": 5
+    }
+  ],
   "eventSettings": {
     "passcodeHash": null,
     "predictionsLocked": false
