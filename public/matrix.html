@@ -202,6 +202,10 @@
             <td><strong>${row.actualDrinks}</strong></td>
             <td>${row.selfEstimate}</td>
             ${predictors.map(p => {
+              // Hide self-predictions (when predictor === target)
+              if (p.id === row.target.id) {
+                return `<td>—</td>`;
+              }
               const pred = row.predictions[p.id];
               return `<td>${pred !== undefined ? pred : '—'}</td>`;
             }).join('')}

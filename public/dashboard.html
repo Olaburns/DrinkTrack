@@ -96,12 +96,8 @@
       events: []
     };
 
-    // Historical chart data (all data for cumulative mode)
-    let historicalChartData = {
-      times: [],
-      series: {},
-      events: []
-    };
+    // Historical baseline (total drinks before the 60-min window)
+    let historicalBaseline = {};
 
     let drinks = [];
     
@@ -122,31 +118,39 @@
       'hsl(171, 77%, 47%)'
     ];
     
-    // Fetch historical stats
-    async function fetchHistoricalStats() {
+    // Fetch historical baseline (total drinks before 60-min window)
+    async function fetchHistoricalBaseline() {
       try {
         const response = await fetch('/api/stats/historical');
         const data = await response.json();
         
-        // Process historical buckets
-        historicalChartData.times = data.buckets.map(b => b.timestamp);
-        historicalChartData.events = data.allEvents || [];
-        historicalChartData.series = {};
+        // Calculate baseline: sum all drinks before the current 60-min window
+        const now = new Date();
+        const sixtyMinAgo = new Date(now.getTime() - 60 * 60 * 1000);
         
-        // Build series data
-        data.buckets.forEach((bucket, index) => {
-          Object.keys(bucket.drinks).forEach(drinkName => {
-            if (!historicalChartData.series[drinkName]) {
-              historicalChartData.series[drinkName] = new Array(data.buckets.length).fill(0);
-            }
-            historicalChartData.series[drinkName][index] = bucket.drinks[drinkName];
-          });
+        historicalBaseline = {};
+        drinks.forEach(drink => {
+          historicalBaseline[drink.name] = 0;
         });
         
-        // Update chart
+        // Sum all buckets before the 60-min window
+        data.buckets.forEach(bucket => {
+          const bucketTime = new Date(bucket.timestamp);
+          if (bucketTime < sixtyMinAgo) {
+            Object.keys(bucket.drinks).forEach(drinkName => {
+              if (!historicalBaseline[drinkName]) {
+                historicalBaseline[drinkName] = 0;
+              }
+              historicalBaseline[drinkName] += bucket.drinks[drinkName];
+            });
+          }
+        });
+        
+        // Update chart and legend
         chart.setOption(getChartOption(), true);
+        updateLegend();
       } catch (err) {
-        console.error('Failed to fetch historical stats:', err);
+        console.error('Failed to fetch historical baseline:', err);
       }
     }
     
@@ -157,27 +161,27 @@
       document.getElementById('modeLabel').textContent = 
         chartMode === 'normal' ? 'Switch to Cumulative' : 'Switch to Normal';
       
-      // Fetch historical data when switching to cumulative mode
+      // Fetch historical baseline when switching to cumulative mode
       if (chartMode === 'cumulative') {
-        await fetchHistoricalStats();
+        await fetchHistoricalBaseline();
       } else {
         chart.setOption(getChartOption(), true);
+        updateLegend();
       }
     }
 
     // Chart options
     function getChartOption() {
-      // Select data source based on mode
-      const dataSource = chartMode === 'cumulative' ? historicalChartData : chartData;
-      
-      const seriesData = Object.keys(dataSource.series).map((drinkName, index) => {
+      const seriesData = Object.keys(chartData.series).map((drinkName, index) => {
         const drink = drinks.find(d => d.name === drinkName);
         const color = drink?.color || colorPalette[index % colorPalette.length];
         
-        // Calculate cumulative data if in cumulative mode
-        let data = dataSource.series[drinkName];
+        // Calculate data based on mode
+        let data = chartData.series[drinkName];
         if (chartMode === 'cumulative') {
-          let cumSum = 0;
+          // Start from historical baseline and add cumulative values
+          const baseline = historicalBaseline[drinkName] || 0;
+          let cumSum = baseline;
           data = data.map(val => {
             cumSum += val;
             return cumSum;
@@ -206,8 +210,8 @@
         };
       });
 
-      // Event markers - use the appropriate events based on mode
-      const markLines = dataSource.events.map(event => {
+      // Event markers
+      const markLines = chartData.events.map(event => {
         const eventColor = event.color || '#F59E0B'; // Default amber
         return {
           xAxis: event.at,
@@ -262,7 +266,7 @@
         xAxis: {
           type: 'category',
           boundaryGap: false,
-          data: dataSource.times,
+          data: chartData.times,
           axisLine: {
             lineStyle: {
               color: 'hsl(220, 10%, 20%)'
@@ -318,7 +322,18 @@
       legendContainer.innerHTML = '';
 
       drinks.forEach((drink, index) => {
-        const totalCount = chartData.series[drink.name]?.reduce((sum, val) => sum + val, 0) || 0;
+        // Calculate total based on mode
+        let totalCount = 0;
+        const windowCount = chartData.series[drink.name]?.reduce((sum, val) => sum + val, 0) || 0;
+        
+        if (chartMode === 'cumulative') {
+          // In cumulative mode, show total = baseline + window
+          const baseline = historicalBaseline[drink.name] || 0;
+          totalCount = baseline + windowCount;
+        } else {
+          // In normal mode, show only window count
+          totalCount = windowCount;
+        }
         
         // Get the color for this drink (same as chart)
         const drinkColor = drink.color || colorPalette[index % colorPalette.length];
@@ -441,6 +456,13 @@
         console.error('SSE error:', error);
       };
     }
+    
+    // Setup periodic baseline refresh when in cumulative mode
+    setInterval(() => {
+      if (chartMode === 'cumulative') {
+        fetchHistoricalBaseline();
+      }
+    }, 60000); // Refresh every 60 seconds
 
     // Handle window resize
     window.addEventListener('resize', () => {
@@ -480,9 +502,9 @@
       setupSSE();
       generatePermanentQR();
       
-      // Load historical data if starting in cumulative mode
+      // Load historical baseline if starting in cumulative mode
       if (chartMode === 'cumulative') {
-        await fetchHistoricalStats();
+        await fetchHistoricalBaseline();
       } else {
         // Show initial empty state for normal mode
         chart.setOption(getChartOption());
