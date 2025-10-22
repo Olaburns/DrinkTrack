@@ -16,6 +16,23 @@ Track consumed drinks over time during social events with live visualization, ev
 - **NEW**: Multi-participant prediction game with awards system
 
 ## Recent Changes
+**2025-10-22**: Awards system enhancements
+- **Glückspilz (Lucky Duck) award**: New award for participants furthest from their self-estimate but with accurate predictions about others (self-miss ≥3, prediction error <5)
+- **German descriptions for all awards**: Each award now includes explanation of how it works
+  - Kotzstempel: "Die meisten Drinks konsumiert - der Champion des Abends!"
+  - Spülsüchtigen: "Der beste Vorhersager - niedrigste durchschnittliche Abweichung bei allen Tipps."
+  - Stille Wasser sind tief: "Am schwersten vorherzusagen - alle anderen lagen bei dieser Person am weitesten daneben."
+  - Schwarzer Peter: "Der schlechteste Tippgeber - größte durchschnittliche Abweichung bei allen Vorhersagen."
+  - Glückspilz: "Hatte keine Ahnung über sich selbst, aber trotzdem gute Vorhersagen über andere gemacht."
+- **Enhanced awards UI**: 
+  - Fade-in/slide animations when navigating between awards
+  - Glowing award names with pulsing animation
+  - Hover effects on winner cards (lift + purple glow)
+  - Award progress counter ("X von Y Awards")
+  - Keyboard navigation support (arrow keys)
+  - Golden borders and glow on winner avatars
+  - German UI labels ("Zurück", "Weiter", "Zur Matrix")
+
 **2025-10-22**: Critical bug fixes
 - **Fixed Actual column in matrix**: `/consume` endpoint now extracts and stores participantId, enabling accurate drink counts per participant in matrix view
 - **Hidden self-estimates in predictions**: Removed self-estimate display from predictions view to ensure independent predictions without bias
@@ -59,7 +76,7 @@ Track consumed drinks over time during social events with live visualization, ev
 - Added participant registration via /join page (name, avatar, self-estimate)
 - Created predictions system allowing participants to predict others' totals
 - Implemented password-protected matrix view showing all predictions
-- Added German-labeled awards system (Kotzstempel, Spülsüchtigen, Stille Wasser, Schwarzer Peter)
+- Added German-labeled awards system (Kotzstempel, Spülsüchtigen, Stille Wasser sind tief, Schwarzer Peter, Glückspilz)
 - Added QR code to dashboard for easy participant joining via mobile devices
 - Participant-specific drink tracking with localStorage session management
 - Real-time updates via SSE for participants and predictions

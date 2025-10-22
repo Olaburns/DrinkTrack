@@ -283,6 +283,26 @@
     {
       "drinkName": "Cosmo Politan",
       "at": "2025-10-22T14:35:19.668Z"
+    },
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-22T15:57:51.733Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T15:57:59.581Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T15:58:01.311Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-22T15:58:02.633Z"
+    },
+    {
+      "drinkName": "Gin Tonic",
+      "at": "2025-10-22T15:58:05.117Z"
     }
   ],
   "events": [
