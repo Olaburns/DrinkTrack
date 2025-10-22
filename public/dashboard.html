@@ -89,8 +89,15 @@
       useDirtyRect: false
     });
 
-    // Chart state
+    // Chart state (for rolling 60-min window from SSE)
     let chartData = {
+      times: [],
+      series: {},
+      events: []
+    };
+
+    // Historical chart data (all data for cumulative mode)
+    let historicalChartData = {
       times: [],
       series: {},
       events: []
@@ -115,23 +122,60 @@
       'hsl(171, 77%, 47%)'
     ];
     
+    // Fetch historical stats
+    async function fetchHistoricalStats() {
+      try {
+        const response = await fetch('/api/stats/historical');
+        const data = await response.json();
+        
+        // Process historical buckets
+        historicalChartData.times = data.buckets.map(b => b.timestamp);
+        historicalChartData.events = data.allEvents || [];
+        historicalChartData.series = {};
+        
+        // Build series data
+        data.buckets.forEach((bucket, index) => {
+          Object.keys(bucket.drinks).forEach(drinkName => {
+            if (!historicalChartData.series[drinkName]) {
+              historicalChartData.series[drinkName] = new Array(data.buckets.length).fill(0);
+            }
+            historicalChartData.series[drinkName][index] = bucket.drinks[drinkName];
+          });
+        });
+        
+        // Update chart
+        chart.setOption(getChartOption(), true);
+      } catch (err) {
+        console.error('Failed to fetch historical stats:', err);
+      }
+    }
+    
     // Toggle chart mode
-    function toggleChartMode() {
+    async function toggleChartMode() {
       chartMode = chartMode === 'normal' ? 'cumulative' : 'normal';
       localStorage.setItem('chartMode', chartMode);
       document.getElementById('modeLabel').textContent = 
         chartMode === 'normal' ? 'Switch to Cumulative' : 'Switch to Normal';
-      chart.setOption(getChartOption(), true);
+      
+      // Fetch historical data when switching to cumulative mode
+      if (chartMode === 'cumulative') {
+        await fetchHistoricalStats();
+      } else {
+        chart.setOption(getChartOption(), true);
+      }
     }
 
     // Chart options
     function getChartOption() {
-      const seriesData = Object.keys(chartData.series).map((drinkName, index) => {
+      // Select data source based on mode
+      const dataSource = chartMode === 'cumulative' ? historicalChartData : chartData;
+      
+      const seriesData = Object.keys(dataSource.series).map((drinkName, index) => {
         const drink = drinks.find(d => d.name === drinkName);
         const color = drink?.color || colorPalette[index % colorPalette.length];
         
         // Calculate cumulative data if in cumulative mode
-        let data = chartData.series[drinkName];
+        let data = dataSource.series[drinkName];
         if (chartMode === 'cumulative') {
           let cumSum = 0;
           data = data.map(val => {
@@ -162,8 +206,8 @@
         };
       });
 
-      // Event markers
-      const markLines = chartData.events.map(event => {
+      // Event markers - use the appropriate events based on mode
+      const markLines = dataSource.events.map(event => {
         const eventColor = event.color || '#F59E0B'; // Default amber
         return {
           xAxis: event.at,
@@ -218,7 +262,7 @@
         xAxis: {
           type: 'category',
           boundaryGap: false,
-          data: chartData.times,
+          data: dataSource.times,
           axisLine: {
             lineStyle: {
               color: 'hsl(220, 10%, 20%)'
@@ -436,8 +480,13 @@
       setupSSE();
       generatePermanentQR();
       
-      // Show initial empty state
-      chart.setOption(getChartOption());
+      // Load historical data if starting in cumulative mode
+      if (chartMode === 'cumulative') {
+        await fetchHistoricalStats();
+      } else {
+        // Show initial empty state for normal mode
+        chart.setOption(getChartOption());
+      }
     }
 
     init();

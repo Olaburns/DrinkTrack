@@ -150,6 +150,40 @@ function getAggregatedStats() {
   };
 }
 
+// Helper: Aggregate ALL historical stats (for cumulative view)
+function getAllHistoricalStats() {
+  // Create minute buckets for ALL consumptions
+  const buckets = new Map();
+  
+  // Aggregate all consumptions into buckets
+  state.consumptions.forEach(consumption => {
+    const timestamp = new Date(consumption.at).getTime();
+    const bucketKey = Math.floor(timestamp / (60 * 1000));
+    
+    if (!buckets.has(bucketKey)) {
+      buckets.set(bucketKey, {
+        timestamp: new Date(bucketKey * 60 * 1000).toISOString(),
+        drinks: {}
+      });
+    }
+    
+    const bucket = buckets.get(bucketKey);
+    if (!bucket.drinks[consumption.drinkName]) {
+      bucket.drinks[consumption.drinkName] = 0;
+    }
+    bucket.drinks[consumption.drinkName]++;
+  });
+  
+  // Convert to sorted array
+  const sortedBuckets = Array.from(buckets.values())
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  
+  return {
+    buckets: sortedBuckets,
+    allEvents: state.events
+  };
+}
+
 // Helper: Save snapshot
 async function saveSnapshot() {
   try {
@@ -896,6 +930,12 @@ app.get('/api/network-info', (req, res) => {
     lanIp,
     port: PORT
   });
+});
+
+// Historical stats (for cumulative view)
+app.get('/api/stats/historical', (req, res) => {
+  const stats = getAllHistoricalStats();
+  res.json(stats);
 });
 
 // Authentication middleware for protected routes
