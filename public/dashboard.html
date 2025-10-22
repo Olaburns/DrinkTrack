@@ -10,6 +10,20 @@
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    /* Hide permanent QR on mobile, show button instead */
+    @media (max-width: 768px) {
+      #permanentQR {
+        display: none !important;
+      }
+    }
+    /* Hide button on desktop, show permanent QR instead */
+    @media (min-width: 769px) {
+      [data-testid="button-show-qr"] {
+        display: none !important;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="app-container">
@@ -52,6 +66,17 @@
       <!-- Legend -->
       <div class="legend" id="legend">
         <!-- Dynamic legend items will be inserted here -->
+      </div>
+
+      <!-- Permanent QR Code (desktop only) -->
+      <div id="permanentQR" style="margin: 1.5rem 1rem; padding: 1.5rem; background: hsl(220, 15%, 10%); border-radius: 0.75rem; border: 1px solid hsl(220, 15%, 16%);">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+          <h3 style="font-size: 1rem; font-weight: 600; color: hsl(220, 10%, 95%); margin: 0;">Scan to Join Event</h3>
+          <div id="permanentQRCode" style="background: white; padding: 0.75rem; border-radius: 0.5rem;"></div>
+          <p style="text-align: center; color: hsl(220, 9%, 46%); font-size: 0.875rem; margin: 0;">
+            Scan with your phone to track your drinks
+          </p>
+        </div>
       </div>
     </main>
   </div>
@@ -378,10 +403,38 @@
       chart.resize();
     });
 
+    // Generate permanent QR code (for desktop)
+    async function generatePermanentQR() {
+      const qrContainer = document.getElementById('permanentQRCode');
+      if (!qrContainer) return;
+      
+      // Fetch network info to use LAN IP
+      let joinURL = window.location.origin + '/join';
+      try {
+        const response = await fetch('/api/network-info');
+        if (response.ok) {
+          const { lanIp, port } = await response.json();
+          joinURL = `http://${lanIp}:${port}/join`;
+        }
+      } catch (err) {
+        console.error('Failed to fetch network info:', err);
+      }
+      
+      new QRCode(qrContainer, {
+        text: joinURL,
+        width: 180,
+        height: 180,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+
     // Initialize
     async function init() {
       await fetchDrinks();
       setupSSE();
+      generatePermanentQR();
       
       // Show initial empty state
       chart.setOption(getChartOption());
