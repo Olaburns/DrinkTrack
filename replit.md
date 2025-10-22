@@ -3,6 +3,8 @@
 ### Overview
 The Drink Tracker is a zero-friction, real-time drink tracking application designed for social gatherings. It provides two simultaneously accessible views: a live dashboard for monitoring consumption and a touch-friendly control panel for logging drinks. Its purpose is to track consumed drinks over time with live visualization, event markers, and automatic crash protection via snapshots, enabling multiple people to access the app on the same local area network (LAN) simultaneously. The application also features a multi-participant prediction game with an awards system.
 
+**Deployment**: Works both on Replit and local machines. For local development, Docker Compose provides PostgreSQL, and setup scripts (setup.sh/setup.bat) automate the entire setup process.
+
 ### User Preferences
 - **Tech Stack**: Node.js 20 + Express + vanilla JS (no React/bundler)
 - **UI Style**: Premium dark theme with glass morphism
@@ -41,8 +43,18 @@ The frontend utilizes **Vanilla JavaScript** with libraries via CDN (no bundler)
 
 ### External Dependencies
 - **ECharts**: For live time-series visualizations on the dashboard.
-- **PostgreSQL**: Used for persistent session storage via `connect-pg-simple`.
+- **PostgreSQL**: Used for persistent session storage via `connect-pg-simple`. On Replit, automatically provided. Locally, runs via Docker Compose.
 - **Express-session**: Middleware for session management.
 - **Multer**: Handles multipart/form-data for file uploads (avatar photos).
 - **Node.js**: Runtime environment.
+- **Docker** (local only): Used to run PostgreSQL locally without system installation.
 - **CDN-hosted Libraries**: Various JavaScript libraries used in the frontend.
+
+### Local Development Setup
+For running on a local machine, the project includes:
+- **docker-compose.yml**: Defines PostgreSQL service with health checks
+- **setup.sh / setup.bat**: Automated setup scripts for Unix/Windows
+- **.env.example**: Template for environment variables (DATABASE_URL, PORT, etc.)
+- **SETUP.md**: Comprehensive local development guide
+
+Setup process: Run `./setup.sh` (or `setup.bat` on Windows) to automatically create `.env`, start PostgreSQL, and prepare uploads directory. Then run `npm run dev` to start the app.
