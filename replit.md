@@ -32,8 +32,9 @@ The frontend utilizes **Vanilla JavaScript** with libraries via CDN (no bundler)
 #### Core Features
 - **Real-time Updates**: SSE broadcasts consumption/event changes to all connected clients with sub-second latency.
 - **Dual Views**: Dashboard and control panel can run simultaneously on different devices.
-- **Participant Management**: Registration, prediction game, and authenticated matrix view with awards.
-- **Security Hardening**: Session-based authentication with `httpOnly` and `sameSite=strict` cookies, `requireAuth` middleware for sensitive routes, passcode protection, and robust data validation.
+- **Participant Management**: Registration, prediction game, authenticated matrix view with awards, and participant deletion with cascading removes.
+- **Photo Upload**: Participants can upload profile photos or use their camera. Two-tab interface (URL/Upload) with real-time preview, 5MB limit, image-only validation. Local file storage in `./uploads/avatars/` for portability. Works on any machine with Node.js.
+- **Security Hardening**: Session-based authentication with `httpOnly` and `sameSite=strict` cookies, `requireAuth` middleware for sensitive routes, passcode protection, and robust data validation. PostgreSQL-backed session persistence.
 - **UI/UX**: Premium dark theme with glass morphism, responsive design, network-accessible QR codes, permanent QR display on desktop, and mobile navigation optimization.
 - **Data Integrity**: Automatic snapshots, 300ms debounce protection for drink logging, and historical data retention.
 - **Awards System**: German-labeled awards (e.g., Kotzstempel, Glückspilz) with enhanced UI and animations.
@@ -42,5 +43,6 @@ The frontend utilizes **Vanilla JavaScript** with libraries via CDN (no bundler)
 - **ECharts**: For live time-series visualizations on the dashboard.
 - **PostgreSQL**: Used for persistent session storage via `connect-pg-simple`.
 - **Express-session**: Middleware for session management.
+- **Multer**: Handles multipart/form-data for file uploads (avatar photos).
 - **Node.js**: Runtime environment.
 - **CDN-hosted Libraries**: Various JavaScript libraries used in the frontend.
