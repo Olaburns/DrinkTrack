@@ -16,6 +16,10 @@ Track consumed drinks over time during social events with live visualization, ev
 - **NEW**: Multi-participant prediction game with awards system
 
 ## Recent Changes
+**2025-10-22**: Critical bug fixes
+- **Fixed Actual column in matrix**: `/consume` endpoint now extracts and stores participantId, enabling accurate drink counts per participant in matrix view
+- **Hidden self-estimates in predictions**: Removed self-estimate display from predictions view to ensure independent predictions without bias
+
 **2025-10-22**: Live cumulative dashboard and matrix privacy
 - **Live cumulative mode**: 
   - Cumulative mode now receives real-time SSE updates (was static before)
