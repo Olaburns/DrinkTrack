@@ -16,6 +16,18 @@ Track consumed drinks over time during social events with live visualization, ev
 - **NEW**: Multi-participant prediction game with awards system
 
 ## Recent Changes
+**2025-10-22**: User experience improvements
+- **Self-prediction protection**: Client-side filtering prevents selecting self in predictions list; server-side validation rejects predictorId === targetId
+- **Network-accessible QR codes**: New `/api/network-info` endpoint provides LAN IP; QR codes now encode network URL (http://192.168.x.x:5000/join) instead of localhost
+- **Permanent QR display**: QR code always visible on dashboard for desktop users (media query hides on mobile <769px where modal button remains)
+- **Mobile navigation optimization**: Button text labels hidden on screens <640px to prevent overlap; icons-only display on mobile
+- **Historical data retention**: 
+  - All consumptions persist in memory/snapshots (never deleted)
+  - New `/api/stats/historical` endpoint aggregates full consumption history
+  - Dashboard maintains separate rolling (60-min window) and historical (all-time) data sources
+  - Normal mode uses live 60-min rolling window; cumulative mode fetches and displays complete history
+  - Chart automatically fetches historical data on mode toggle or initial load in cumulative mode
+
 **2025-10-21**: Comprehensive security hardening
 - **Session-based authentication**: express-session with httpOnly, sameSite=strict cookies (24hr persistence)
 - **Protected endpoints**: requireAuth middleware on all sensitive routes:
@@ -42,8 +54,6 @@ Track consumed drinks over time during social events with live visualization, ev
 - Participant-specific drink tracking with localStorage session management
 - Real-time updates via SSE for participants and predictions
 - Lock/unlock mechanism to freeze predictions before reveal
-
-## Recent Changes
 **2025-10-20**: Quality improvements
 - Fixed double-drink bug by adding 300ms debounce protection and converting from inline onclick to addEventListener
 - Updated dashboard legend styling to use chart colors for borders (visual consistency)
@@ -132,6 +142,8 @@ Track consumed drinks over time during social events with live visualization, ev
 - `POST /drinks` → create new drink
 - `POST /consume` → record consumption (with optional participantId)
 - `POST /event` → create event marker
+- `GET /api/network-info` → get LAN IP and port for QR code generation
+- `GET /api/stats/historical` → get all-time consumption statistics (all buckets since first drink)
 
 **API - Participants & Predictions**
 - `GET /api/participants` → list all participants **(protected)**
