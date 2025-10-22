@@ -781,6 +781,11 @@ app.post('/api/predictions', (req, res) => {
     return res.status(400).json({ error: 'predictedDrinks is required' });
   }
   
+  // Prevent self-predictions
+  if (predictorId === targetId) {
+    return res.status(400).json({ error: 'Cannot predict your own drinks. Use self-estimate instead.' });
+  }
+  
   // Validate that both participants exist
   const predictor = state.participants.find(p => p.id === predictorId);
   const target = state.participants.find(p => p.id === targetId);

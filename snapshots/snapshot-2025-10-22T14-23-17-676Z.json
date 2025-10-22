@@ -59,6 +59,12 @@
       "emoji": "",
       "imageUrl": "https://api.cocktails.de/sites/default/files/styles/is_detail/public/cocktails-gin-tonic_7.jpg?itok=Uejui1bf",
       "color": "#8B5CF6"
+    },
+    {
+      "name": "Cosmo Politan",
+      "emoji": "",
+      "imageUrl": "https://images.ctfassets.net/6zncp07wiqyq/01y2NfH3VAoHjnR32dkt6c/86557db32d540367d86bac51c7326732/media_m5hl2nyg_2102b_dba2_cosmopolitan_690x404.jpg",
+      "color": "#FBBF24"
     }
   ],
   "consumptions": [
@@ -189,6 +195,74 @@
     {
       "drinkName": "Moskau Mule",
       "at": "2025-10-21T07:44:17.573Z"
+    },
+    {
+      "drinkName": "Cosmo Politan",
+      "at": "2025-10-22T13:25:13.183Z"
+    },
+    {
+      "drinkName": "Tequila",
+      "at": "2025-10-22T13:25:19.089Z"
+    },
+    {
+      "drinkName": "Longdrink",
+      "at": "2025-10-22T13:25:24.887Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T13:25:26.053Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-22T13:25:27.856Z"
+    },
+    {
+      "drinkName": "Cocktail",
+      "at": "2025-10-22T13:25:28.839Z"
+    },
+    {
+      "drinkName": "Gin Tonic",
+      "at": "2025-10-22T13:25:29.853Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-22T13:26:05.078Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-22T13:26:05.580Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-22T13:26:06.060Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-22T13:26:06.550Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-22T13:26:07.050Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-22T14:11:24.924Z"
+    },
+    {
+      "drinkName": "Longdrink",
+      "at": "2025-10-22T14:11:25.808Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T14:11:27.382Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T14:11:28.253Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T14:11:29.021Z"
     }
   ],
   "events": [
@@ -208,14 +282,19 @@
       "label": "Rage Cage",
       "color": "#D97706",
       "at": "2025-10-20T16:13:44.987Z"
+    },
+    {
+      "label": "Beer Pong",
+      "color": "#DC2626",
+      "at": "2025-10-22T13:32:45.689Z"
     }
   ],
   "participants": [
     {
       "id": "763192a8e2db025b66ea39b5d0778c80",
       "name": "Simon",
-      "avatar": "",
-      "selfEstimate": 10
+      "avatar": "https://media.licdn.com/dms/image/v2/D4E03AQF0QOEeMyZCfQ/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1695468638313?e=2147483647&v=beta&t=AqAM-7ICHFjIUTKjwEMMwW1WK5ByAE80c2pOndoK0P0",
+      "selfEstimate": 6
     }
   ],
   "predictions": [

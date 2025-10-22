@@ -96,6 +96,7 @@
       });
 
       container.innerHTML = participants
+        .filter(target => target.id !== myParticipantId) // Don't show self-predictions
         .map(target => {
           const currentPrediction = predictionMap[target.id] || '';
           return `
