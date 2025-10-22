@@ -283,6 +283,56 @@
     {
       "drinkName": "Cosmo Politan",
       "at": "2025-10-22T14:35:19.668Z"
+    },
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-22T15:57:51.733Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T15:57:59.581Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T15:58:01.311Z"
+    },
+    {
+      "drinkName": "Sparkling",
+      "at": "2025-10-22T15:58:02.633Z"
+    },
+    {
+      "drinkName": "Gin Tonic",
+      "at": "2025-10-22T15:58:05.117Z"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T17:07:21.406Z",
+      "participantId": "763192a8e2db025b66ea39b5d0778c80"
+    },
+    {
+      "drinkName": "Beer",
+      "at": "2025-10-22T17:07:21.963Z",
+      "participantId": "763192a8e2db025b66ea39b5d0778c80"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T17:07:41.793Z",
+      "participantId": "8c75447468c29223404df350cd68a016"
+    },
+    {
+      "drinkName": "Wine",
+      "at": "2025-10-22T17:07:42.440Z",
+      "participantId": "8c75447468c29223404df350cd68a016"
+    },
+    {
+      "drinkName": "Whisky",
+      "at": "2025-10-22T17:07:43.001Z",
+      "participantId": "8c75447468c29223404df350cd68a016"
+    },
+    {
+      "drinkName": "Whisky",
+      "at": "2025-10-22T17:07:44.018Z",
+      "participantId": "8c75447468c29223404df350cd68a016"
     }
   ],
   "events": [
@@ -311,20 +361,13 @@
   ],
   "participants": [
     {
-      "id": "763192a8e2db025b66ea39b5d0778c80",
+      "id": "8c75447468c29223404df350cd68a016",
       "name": "Simon",
-      "avatar": "https://media.licdn.com/dms/image/v2/D4E03AQF0QOEeMyZCfQ/profile-displayphoto-shrink_200_200/profile-displayphoto-shrink_200_200/0/1695468638313?e=2147483647&v=beta&t=AqAM-7ICHFjIUTKjwEMMwW1WK5ByAE80c2pOndoK0P0",
-      "selfEstimate": 6
+      "avatar": "",
+      "selfEstimate": 30
     }
   ],
-  "predictions": [
-    {
-      "id": "be649c9fefd2cf0f55d907587513a0a4",
-      "predictorId": "763192a8e2db025b66ea39b5d0778c80",
-      "targetId": "763192a8e2db025b66ea39b5d0778c80",
-      "predictedDrinks": 5
-    }
-  ],
+  "predictions": [],
   "eventSettings": {
     "passcodeHash": null,
     "predictionsLocked": false
