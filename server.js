@@ -97,6 +97,18 @@ app.use(express.static(join(__dirname, 'public')));
 // Serve uploaded avatar images
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 
+// Ensure uploads directory exists
+const uploadsDir = join(__dirname, 'uploads/avatars');
+if (!existsSync(uploadsDir)) {
+  try {
+    await mkdir(uploadsDir, { recursive: true });
+    console.log('✓ Created uploads directory:', uploadsDir);
+  } catch (err) {
+    console.error('❌ Failed to create uploads directory:', err);
+    throw err;
+  }
+}
+
 // Configure multer for avatar uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {

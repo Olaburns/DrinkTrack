@@ -161,11 +161,17 @@
           const error = await response.json();
           statusTextEl.textContent = '✗ Upload failed: ' + (error.error || 'Unknown error');
           statusTextEl.style.color = 'hsl(0, 84%, 60%)';
+          // Reset on failure
+          document.getElementById('finalAvatarUrl').value = '';
+          document.getElementById('avatarPreview').style.display = 'none';
         }
       } catch (err) {
         console.error('Upload error:', err);
         statusTextEl.textContent = '✗ Upload failed: Connection error';
         statusTextEl.style.color = 'hsl(0, 84%, 60%)';
+        // Reset on failure
+        document.getElementById('finalAvatarUrl').value = '';
+        document.getElementById('avatarPreview').style.display = 'none';
       }
     }
     
