@@ -2,6 +2,7 @@ import express from 'express';
 import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import pg from 'pg';
+import multer from 'multer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { writeFile, readFile, readdir, unlink, mkdir, rename } from 'fs/promises';
@@ -93,6 +94,32 @@ app.use(session({
 }));
 
 app.use(express.static(join(__dirname, 'public')));
+// Serve uploaded avatar images
+app.use('/uploads', express.static(join(__dirname, 'uploads')));
+
+// Configure multer for avatar uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, join(__dirname, 'uploads/avatars'));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = file.originalname.split('.').pop();
+    cb(null, `avatar-${uniqueSuffix}.${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    // Accept images only
+    if (!file.mimetype.startsWith('image/')) {
+      return cb(new Error('Only image files are allowed'));
+    }
+    cb(null, true);
+  }
+});
 
 // In-memory state
 let state = {
@@ -872,6 +899,17 @@ app.post('/api/passcode/verify', (req, res) => {
   } else {
     res.json({ valid });
   }
+});
+
+// Avatar upload endpoint
+app.post('/api/upload-avatar', upload.single('avatar'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+  
+  // Return the URL path to the uploaded file
+  const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+  res.json({ avatarUrl });
 });
 
 // Participant management (protected)
