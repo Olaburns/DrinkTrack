@@ -637,3 +637,30 @@ body {
   border-color: white;
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
 }
+
+/* Mobile Navigation Improvements */
+@media (max-width: 640px) {
+  /* Hide button text labels on mobile, show only icons */
+  .header .btn span:not(:first-child) {
+    display: none;
+  }
+  
+  .header .btn {
+    min-width: auto;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  /* Reduce header title size on mobile */
+  .header-title {
+    font-size: 1.125rem;
+  }
+  
+  .header-title span:last-child {
+    display: none;
+  }
+  
+  /* Reduce gap between buttons on mobile */
+  .header > div {
+    gap: 0.5rem !important;
+  }
+}
