@@ -16,6 +16,15 @@ Track consumed drinks over time during social events with live visualization, ev
 - **NEW**: Multi-participant prediction game with awards system
 
 ## Recent Changes
+**2025-10-22**: Live cumulative dashboard and matrix privacy
+- **Live cumulative mode**: 
+  - Cumulative mode now receives real-time SSE updates (was static before)
+  - Displays 60-minute rolling window on x-axis (same as normal mode)
+  - Cumulative values calculated from ALL historical data (historical baseline + rolling window)
+  - Historical baseline auto-refreshes every 60 seconds to stay accurate
+  - Legend shows cumulative totals (baseline + window) in cumulative mode
+- **Matrix privacy**: Self-predictions hidden in matrix view (shows "—" when predictor === target)
+
 **2025-10-22**: User experience improvements
 - **Self-prediction protection**: Client-side filtering prevents selecting self in predictions list; server-side validation rejects predictorId === targetId
 - **Network-accessible QR codes**: New `/api/network-info` endpoint provides LAN IP; QR codes now encode network URL (http://192.168.x.x:5000/join) instead of localhost
@@ -24,9 +33,6 @@ Track consumed drinks over time during social events with live visualization, ev
 - **Historical data retention**: 
   - All consumptions persist in memory/snapshots (never deleted)
   - New `/api/stats/historical` endpoint aggregates full consumption history
-  - Dashboard maintains separate rolling (60-min window) and historical (all-time) data sources
-  - Normal mode uses live 60-min rolling window; cumulative mode fetches and displays complete history
-  - Chart automatically fetches historical data on mode toggle or initial load in cumulative mode
 
 **2025-10-21**: Comprehensive security hardening
 - **Session-based authentication**: express-session with httpOnly, sameSite=strict cookies (24hr persistence)
