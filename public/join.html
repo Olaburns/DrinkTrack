@@ -27,9 +27,51 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label" for="avatarUrl">Avatar URL (optional)</label>
-            <input type="url" id="avatarUrl" class="form-input" placeholder="https://..." data-testid="input-avatar">
-            <p class="form-hint">Paste a link to your profile picture</p>
+            <label class="form-label">Profile Photo (optional)</label>
+            
+            <!-- Tab buttons -->
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+              <button type="button" class="btn btn-outline" id="urlTabBtn" onclick="switchAvatarTab('url')" data-testid="button-avatar-url-tab" style="flex: 1;">
+                🔗 URL
+              </button>
+              <button type="button" class="btn btn-outline" id="uploadTabBtn" onclick="switchAvatarTab('upload')" data-testid="button-avatar-upload-tab" style="flex: 1;">
+                📸 Upload / Camera
+              </button>
+            </div>
+            
+            <!-- URL input tab -->
+            <div id="urlTab" style="display: block;">
+              <input type="url" id="avatarUrl" class="form-input" placeholder="https://..." data-testid="input-avatar-url">
+              <p class="form-hint">Paste a link to your profile picture</p>
+            </div>
+            
+            <!-- Upload tab -->
+            <div id="uploadTab" style="display: none;">
+              <input 
+                type="file" 
+                id="avatarFile" 
+                class="form-input" 
+                accept="image/*" 
+                capture="user"
+                onchange="handleAvatarUpload(event)"
+                data-testid="input-avatar-file"
+                style="padding: 0.5rem; cursor: pointer;">
+              <p class="form-hint">Choose a photo or take a selfie</p>
+              
+              <!-- Image preview -->
+              <div id="avatarPreview" style="display: none; margin-top: 1rem; text-align: center;">
+                <img id="previewImage" style="max-width: 150px; max-height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid hsl(262, 83%, 58%);" alt="Avatar preview">
+                <p style="margin-top: 0.5rem; color: hsl(262, 83%, 58%); font-size: 0.875rem;">✓ Photo ready</p>
+              </div>
+              
+              <!-- Upload status -->
+              <div id="uploadStatus" style="display: none; margin-top: 0.5rem; padding: 0.5rem; background: hsl(220, 15%, 10%); border-radius: 0.375rem; font-size: 0.875rem;">
+                <span id="uploadStatusText"></span>
+              </div>
+            </div>
+            
+            <!-- Hidden field to store final avatar URL -->
+            <input type="hidden" id="finalAvatarUrl" data-testid="input-final-avatar">
           </div>
 
           <div class="form-group">
@@ -46,12 +88,100 @@
   </div>
 
   <script>
+    let currentTab = 'url';
+    
+    function switchAvatarTab(tab) {
+      currentTab = tab;
+      
+      // Update tab visibility
+      document.getElementById('urlTab').style.display = tab === 'url' ? 'block' : 'none';
+      document.getElementById('uploadTab').style.display = tab === 'upload' ? 'block' : 'none';
+      
+      // Update button styles
+      const urlBtn = document.getElementById('urlTabBtn');
+      const uploadBtn = document.getElementById('uploadTabBtn');
+      
+      if (tab === 'url') {
+        urlBtn.classList.remove('btn-outline');
+        urlBtn.classList.add('btn-primary');
+        uploadBtn.classList.remove('btn-primary');
+        uploadBtn.classList.add('btn-outline');
+      } else {
+        uploadBtn.classList.remove('btn-outline');
+        uploadBtn.classList.add('btn-primary');
+        urlBtn.classList.remove('btn-primary');
+        urlBtn.classList.add('btn-outline');
+      }
+      
+      // Clear the other tab's input
+      if (tab === 'url') {
+        document.getElementById('avatarFile').value = '';
+        document.getElementById('avatarPreview').style.display = 'none';
+        document.getElementById('uploadStatus').style.display = 'none';
+      } else {
+        document.getElementById('avatarUrl').value = '';
+      }
+    }
+    
+    async function handleAvatarUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Show preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        document.getElementById('previewImage').src = e.target.result;
+        document.getElementById('avatarPreview').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+      
+      // Upload to server
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      const statusEl = document.getElementById('uploadStatus');
+      const statusTextEl = document.getElementById('uploadStatusText');
+      
+      statusEl.style.display = 'block';
+      statusTextEl.textContent = '⏳ Uploading...';
+      statusTextEl.style.color = 'hsl(220, 9%, 46%)';
+      
+      try {
+        const response = await fetch('/api/upload-avatar', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          document.getElementById('finalAvatarUrl').value = data.avatarUrl;
+          statusTextEl.textContent = '✓ Upload complete';
+          statusTextEl.style.color = 'hsl(142, 71%, 45%)';
+        } else {
+          const error = await response.json();
+          statusTextEl.textContent = '✗ Upload failed: ' + (error.error || 'Unknown error');
+          statusTextEl.style.color = 'hsl(0, 84%, 60%)';
+        }
+      } catch (err) {
+        console.error('Upload error:', err);
+        statusTextEl.textContent = '✗ Upload failed: Connection error';
+        statusTextEl.style.color = 'hsl(0, 84%, 60%)';
+      }
+    }
+    
     async function handleJoin(event) {
       event.preventDefault();
 
       const name = document.getElementById('participantName').value;
-      const avatar = document.getElementById('avatarUrl').value;
       const selfEstimate = parseFloat(document.getElementById('selfEstimate').value);
+      
+      // Get avatar from active tab
+      let avatar = '';
+      if (currentTab === 'url') {
+        avatar = document.getElementById('avatarUrl').value;
+      } else {
+        avatar = document.getElementById('finalAvatarUrl').value;
+      }
 
       try {
         const response = await fetch('/api/participants', {
@@ -78,6 +208,9 @@
         alert('Connection error. Please try again.');
       }
     }
+    
+    // Initialize first tab as active
+    switchAvatarTab('url');
   </script>
 </body>
 </html>
