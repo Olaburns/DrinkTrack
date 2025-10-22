@@ -466,9 +466,75 @@ function computeAwards() {
     if (schwarzerPeterWinners.length > 0) {
       awards.push({
         name: 'Schwarzer Peter',
+        description: 'Der schlechteste Tippgeber - größte durchschnittliche Abweichung bei allen Vorhersagen.',
         winners: schwarzerPeterWinners.filter(p => p).map(p => ({ name: p.name, avatar: p.avatar }))
       });
     }
+  }
+
+  // 5. Glückspilz: Lucky Duck - worst self-estimate but made good predictions about others
+  const luckyDuckCandidates = [];
+  
+  participants.forEach(participant => {
+    const selfEstimateError = Math.abs(participant.selfEstimate - actualDrinks[participant.id]);
+    const predictions = predictionsMap[participant.id] || {};
+    
+    // Find their best prediction about someone else (lowest error)
+    let bestPredictionError = Infinity;
+    let hasPredictions = false;
+    
+    Object.keys(predictions).forEach(targetId => {
+      if (targetId !== participant.id && typeof actualDrinks[targetId] !== 'undefined') {
+        const error = Math.abs(predictions[targetId] - actualDrinks[targetId]);
+        if (error < bestPredictionError) {
+          bestPredictionError = error;
+          hasPredictions = true;
+        }
+      }
+    });
+    
+    // Only consider if they made at least one prediction and their self-estimate was off by at least 3
+    if (hasPredictions && selfEstimateError >= 3 && bestPredictionError < 5) {
+      luckyDuckCandidates.push({
+        participant,
+        selfEstimateError,
+        bestPredictionError,
+        luckScore: selfEstimateError - bestPredictionError // Higher = luckier
+      });
+    }
+  });
+  
+  if (luckyDuckCandidates.length > 0) {
+    // Sort by luck score (descending)
+    luckyDuckCandidates.sort((a, b) => b.luckScore - a.luckScore);
+    const maxLuckScore = luckyDuckCandidates[0].luckScore;
+    
+    const gluckspilzWinners = luckyDuckCandidates
+      .filter(c => c.luckScore === maxLuckScore)
+      .map(c => c.participant);
+    
+    if (gluckspilzWinners.length > 0) {
+      awards.push({
+        name: 'Glückspilz',
+        description: 'Hatte keine Ahnung über sich selbst, aber trotzdem gute Vorhersagen über andere gemacht.',
+        winners: gluckspilzWinners.map(p => ({ name: p.name, avatar: p.avatar }))
+      });
+    }
+  }
+
+  // Add descriptions to existing awards
+  if (awards.length > 0) {
+    awards.forEach(award => {
+      if (!award.description) {
+        if (award.name === 'Kotzstempel') {
+          award.description = 'Die meisten Drinks konsumiert - der Champion des Abends!';
+        } else if (award.name === 'Spülsüchtigen') {
+          award.description = 'Der beste Vorhersager - niedrigste durchschnittliche Abweichung bei allen Tipps.';
+        } else if (award.name === 'Stille Wasser sind tief') {
+          award.description = 'Am schwersten vorherzusagen - alle anderen lagen bei dieser Person am weitesten daneben.';
+        }
+      }
+    });
   }
 
   return awards;

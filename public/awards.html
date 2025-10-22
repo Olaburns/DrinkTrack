@@ -21,14 +21,27 @@
     }
     .award-content {
       text-align: center;
-      max-width: 600px;
+      max-width: 700px;
+      width: 100%;
+    }
+    .award-display-container {
+      position: relative;
+      min-height: 400px;
     }
     .award-name {
       font-size: 3rem;
       font-weight: 900;
       color: hsl(48, 96%, 53%);
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
       text-shadow: 0 0 20px hsla(48, 96%, 53%, 0.5);
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+    .award-description {
+      font-size: 1.125rem;
+      color: hsl(220, 9%, 70%);
+      margin-bottom: 2rem;
+      font-style: italic;
+      line-height: 1.6;
     }
     .winner-card {
       background: hsla(220, 15%, 20%, 0.5);
@@ -37,6 +50,11 @@
       border-radius: 1rem;
       padding: 2rem;
       margin-bottom: 1.5rem;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .winner-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px hsla(262, 83%, 58%, 0.3);
     }
     .winner-avatar {
       width: 80px;
@@ -48,6 +66,8 @@
       align-items: center;
       justify-content: center;
       font-size: 3rem;
+      border: 3px solid hsl(48, 96%, 53%);
+      box-shadow: 0 0 15px hsla(48, 96%, 53%, 0.4);
     }
     .winner-name {
       font-size: 1.5rem;
@@ -58,22 +78,87 @@
       display: flex;
       gap: 1rem;
       margin-top: 2rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    
+    /* Animations */
+    @keyframes glow {
+      from {
+        text-shadow: 0 0 20px hsla(48, 96%, 53%, 0.5);
+      }
+      to {
+        text-shadow: 0 0 30px hsla(48, 96%, 53%, 0.8), 0 0 40px hsla(48, 96%, 53%, 0.4);
+      }
+    }
+    
+    @keyframes slideInFromRight {
+      from {
+        opacity: 0;
+        transform: translateX(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes slideInFromLeft {
+      from {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    .slide-in-right {
+      animation: slideInFromRight 0.5s ease-out;
+    }
+    
+    .slide-in-left {
+      animation: slideInFromLeft 0.5s ease-out;
+    }
+    
+    .fade-in {
+      animation: fadeIn 0.5s ease-out;
+    }
+    
+    .award-counter {
+      color: hsl(220, 9%, 60%);
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
     }
   </style>
 </head>
 <body>
   <div class="award-screen">
     <div class="award-content">
-      <div id="awardDisplay"></div>
+      <div class="award-display-container">
+        <div id="awardDisplay"></div>
+      </div>
       
       <div class="nav-buttons">
         <button class="btn btn-outline" onclick="prevAward()" id="prevBtn" data-testid="button-prev-award">
-          ← Previous
+          ← Zurück
         </button>
         <button class="btn btn-outline" onclick="nextAward()" id="nextBtn" data-testid="button-next-award">
-          Next →
+          Weiter →
         </button>
-        <a href="/matrix" class="btn btn-primary" data-testid="button-back-matrix">Back to Matrix</a>
+        <a href="/matrix" class="btn btn-primary" data-testid="button-back-matrix">Zur Matrix</a>
       </div>
     </div>
   </div>
@@ -81,6 +166,7 @@
   <script>
     let awards = [];
     let currentIndex = 0;
+    let lastDirection = 'next'; // Track direction for animation
 
     async function loadAwards() {
       try {
@@ -89,40 +175,50 @@
         
         if (awards.length === 0) {
           document.getElementById('awardDisplay').innerHTML = `
-            <div class="award-name">No Awards Yet</div>
+            <div class="award-name">Noch keine Awards</div>
             <p style="color: hsl(220, 9%, 46%); font-size: 1.125rem;">
-              Not enough data to compute awards. Make sure participants have drinks recorded and predictions submitted.
+              Nicht genug Daten für Awards. Stelle sicher, dass Teilnehmer Getränke getrackt und Vorhersagen gemacht haben.
             </p>
           `;
           return;
         }
         
-        renderAward();
+        renderAward('fade');
       } catch (err) {
         console.error('Failed to load awards:', err);
         document.getElementById('awardDisplay').innerHTML = `
-          <div class="award-name">Error</div>
-          <p style="color: hsl(220, 9%, 46%);">Failed to load awards. Please refresh.</p>
+          <div class="award-name">Fehler</div>
+          <p style="color: hsl(220, 9%, 46%);">Awards konnten nicht geladen werden. Bitte neu laden.</p>
         `;
       }
     }
 
-    function renderAward() {
+    function renderAward(animationType = 'slide') {
       if (awards.length === 0) return;
 
       const award = awards[currentIndex];
       const display = document.getElementById('awardDisplay');
       
+      // Determine animation class
+      let animationClass = 'fade-in';
+      if (animationType === 'slide') {
+        animationClass = lastDirection === 'next' ? 'slide-in-right' : 'slide-in-left';
+      }
+      
       display.innerHTML = `
-        <div class="award-name">${award.name}</div>
-        ${award.winners.map(winner => `
-          <div class="winner-card">
-            <div class="winner-avatar">
-              ${winner.avatar ? `<img src="${winner.avatar}" alt="${winner.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : '🍹'}
+        <div class="${animationClass}">
+          <div class="award-counter">${currentIndex + 1} von ${awards.length} Awards</div>
+          <div class="award-name">${award.name}</div>
+          <div class="award-description">${award.description || ''}</div>
+          ${award.winners.map(winner => `
+            <div class="winner-card">
+              <div class="winner-avatar">
+                ${winner.avatar ? `<img src="${winner.avatar}" alt="${winner.name}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` : '🍹'}
+              </div>
+              <div class="winner-name">${winner.name}</div>
             </div>
-            <div class="winner-name">${winner.name}</div>
-          </div>
-        `).join('')}
+          `).join('')}
+        </div>
       `;
 
       // Update button states
@@ -132,17 +228,28 @@
 
     function prevAward() {
       if (currentIndex > 0) {
+        lastDirection = 'prev';
         currentIndex--;
-        renderAward();
+        renderAward('slide');
       }
     }
 
     function nextAward() {
       if (currentIndex < awards.length - 1) {
+        lastDirection = 'next';
         currentIndex++;
-        renderAward();
+        renderAward('slide');
       }
     }
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        prevAward();
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        nextAward();
+      }
+    });
 
     loadAwards();
   </script>
