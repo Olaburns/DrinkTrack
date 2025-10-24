@@ -623,6 +623,119 @@ function computeAwards() {
     }
   }
 
+  // 6. Eiserne Leber: Iron Liver - highest total drinks (stamina award)
+  if (kotzstempelWinners.length > 0 && maxDrinks >= 5) {
+    awards.push({
+      name: 'Eiserne Leber',
+      description: 'Eiserne Ausdauer - hat die meisten Drinks konsumiert und steht immer noch!',
+      winners: kotzstempelWinners.map(p => ({ name: p.name, avatar: p.avatar }))
+    });
+  }
+
+  // 7. Spätzünder: Late Igniter - slow start, strong finish
+  const now = new Date();
+  const eventStart = state.consumptions.length > 0 
+    ? new Date(Math.min(...state.consumptions.map(c => new Date(c.at).getTime())))
+    : now;
+  const eventDuration = (now - eventStart) / 1000 / 60; // in minutes
+  
+  if (eventDuration >= 60) { // Need at least 1 hour of data
+    const spatezunderCandidates = [];
+    
+    participants.forEach(participant => {
+      const participantConsumptions = state.consumptions
+        .filter(c => c.participantId === participant.id)
+        .map(c => ({ ...c, timestamp: new Date(c.at).getTime() }))
+        .sort((a, b) => a.timestamp - b.timestamp);
+      
+      if (participantConsumptions.length >= 3) {
+        const first30MinCutoff = eventStart.getTime() + (30 * 60 * 1000);
+        const last60MinCutoff = now.getTime() - (60 * 60 * 1000);
+        
+        const drinksFirst30Min = participantConsumptions.filter(c => c.timestamp <= first30MinCutoff).length;
+        const drinksLast60Min = participantConsumptions.filter(c => c.timestamp >= last60MinCutoff).length;
+        
+        // Calculate rates (drinks per minute)
+        const earlyRate = drinksFirst30Min / 30;
+        const lateRate = drinksLast60Min / 60;
+        
+        // Late igniter: low early rate, high late rate
+        if (earlyRate <= 0.1 && lateRate >= 0.05) {
+          const ignitionScore = lateRate - earlyRate; // Higher = more dramatic late ignition
+          spatezunderCandidates.push({
+            participant,
+            ignitionScore
+          });
+        }
+      }
+    });
+    
+    if (spatezunderCandidates.length > 0) {
+      spatezunderCandidates.sort((a, b) => b.ignitionScore - a.ignitionScore);
+      const maxIgnitionScore = spatezunderCandidates[0].ignitionScore;
+      
+      const spatezunderWinners = spatezunderCandidates
+        .filter(c => c.ignitionScore === maxIgnitionScore)
+        .map(c => c.participant);
+      
+      awards.push({
+        name: 'Spätzünder',
+        description: 'Langsamer Start, starkes Finish - brauchte Zeit zum Aufwärmen, aber dann ging es richtig los!',
+        winners: spatezunderWinners.map(p => ({ name: p.name, avatar: p.avatar }))
+      });
+    }
+  }
+
+  // 8. Zeitmaschine: Time Machine - fastest drinker (shortest average time between drinks)
+  const zeitmaschinesCandidates = [];
+  
+  participants.forEach(participant => {
+    const participantConsumptions = state.consumptions
+      .filter(c => c.participantId === participant.id)
+      .map(c => ({ ...c, timestamp: new Date(c.at).getTime() }))
+      .sort((a, b) => a.timestamp - b.timestamp);
+    
+    if (participantConsumptions.length >= 3) {
+      // Calculate average time between consecutive drinks
+      let totalTimeBetween = 0;
+      for (let i = 1; i < participantConsumptions.length; i++) {
+        const timeDiff = participantConsumptions[i].timestamp - participantConsumptions[i - 1].timestamp;
+        totalTimeBetween += timeDiff;
+      }
+      
+      const avgTimeBetweenMs = totalTimeBetween / (participantConsumptions.length - 1);
+      const avgTimeBetweenMin = avgTimeBetweenMs / 1000 / 60;
+      
+      zeitmaschinesCandidates.push({
+        participant,
+        avgTimeBetweenMin
+      });
+    }
+  });
+  
+  if (zeitmaschinesCandidates.length > 0) {
+    // Find minimum average time
+    let minAvgTime = Infinity;
+    let zeitmaschineWinners = [];
+    
+    zeitmaschinesCandidates.forEach(candidate => {
+      if (candidate.avgTimeBetweenMin < minAvgTime) {
+        minAvgTime = candidate.avgTimeBetweenMin;
+        zeitmaschineWinners = [candidate.participant];
+      } else if (candidate.avgTimeBetweenMin === minAvgTime) {
+        zeitmaschineWinners.push(candidate.participant);
+      }
+    });
+    
+    if (zeitmaschineWinners.length > 0 && minAvgTime < 15) { // Only award if avg < 15 min
+      awards.push({
+        name: 'Zeitmaschine',
+        description: 'Schnellster Trinker - kürzeste durchschnittliche Zeit zwischen den Drinks!',
+        winners: zeitmaschineWinners.map(p => ({ name: p.name, avatar: p.avatar }))
+      });
+    }
+  }
+
   // Add descriptions to existing awards
   if (awards.length > 0) {
     awards.forEach(award => {
